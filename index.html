@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ondachi Budget">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#130d17">
+<title>Ondachi Family Budget</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+ --paper:#130d17;--paper2:#1c1221;--card:#24182a;--card2:#302037;--ink:#fff8fb;--ink2:#e7dbe3;--muted:#aa97a5;--line:rgba(255,255,255,.12);--grid:rgba(255,255,255,.08);
+ --accent:#e783a3;--accent-deep:#ba628b;--soft:rgba(255,255,255,.06);--rose:#e783a3;--rose-soft:rgba(231,131,163,.14);
+ --gold:#e7b75c;--gold-soft:rgba(231,183,92,.14);--green:#62c7a5;--green-soft:rgba(98,199,165,.14);
+ --orange:#e7b75c;--red:#f06f7f;--blue:#8ca7ed;--plum:#6f3b78
+}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{margin:0 auto;max-width:640px;min-height:100vh;padding:16px 14px calc(110px + env(safe-area-inset-bottom));
+ font:16px/1.5 "Inter Tight",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink2);
+ background:radial-gradient(circle at 15% -10%,rgba(153,74,136,.35),transparent 40%),linear-gradient(180deg,var(--paper2),var(--paper) 50%)}
+button,input,select{font:inherit}
+button{border:1px solid var(--line);border-radius:12px;padding:10px 13px;background:var(--soft);color:var(--ink);font-weight:600;cursor:pointer;min-height:40px}
+button:active{transform:scale(.97)}
+.primary{background:linear-gradient(120deg,var(--rose),var(--accent-deep));color:#24101c;border-color:transparent;font-weight:700}
+.danger{color:var(--red)}
+.tabtitle{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.tabtitle h1{font-size:30px;font-weight:800;letter-spacing:-.03em;margin:0;color:var(--ink);line-height:1}
+.tabtitle p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.hero{margin-top:16px;color:var(--ink);border-radius:18px;padding:16px;background:linear-gradient(135deg,rgba(111,59,120,.55),rgba(118,47,83,.45)),var(--card);border:1px solid rgba(255,255,255,.16)}
+.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:600;color:var(--muted)}
+.hero-number{font-size:32px;font-weight:800;letter-spacing:-.03em;margin-top:2px;font-variant-numeric:tabular-nums}
+.hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.hero-stat{background:rgba(19,13,23,.3);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:10px}
+.hero-stat small{display:block;color:var(--muted);font-size:11px;font-weight:600}.hero-stat b{display:block;font-size:14px;margin-top:2px;color:var(--ink);font-variant-numeric:tabular-nums}
+.notice{display:none;margin:10px 0 0;padding:12px 14px;background:var(--gold-soft);color:var(--ink2);border:1px solid rgba(231,183,92,.35);border-radius:14px;font-size:14px;line-height:1.45}
+.tab-panel{display:none}.tab-panel.on{display:block}
+.section{margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.sechead{display:flex;gap:12px;align-items:center;padding:15px 16px 12px;font-size:17px;font-weight:700;color:var(--ink)}
+.stepno{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:12px;font-size:16px;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+.summary-sub{display:block;font-size:12.5px;color:var(--muted);font-weight:500;margin-top:1px}
+.body{padding:0 16px 16px}
+.panel{background:rgba(19,13,23,.3);border:1px solid var(--grid);border-radius:14px;padding:13px;margin-top:9px}
+.panel-title{font-size:16px;font-weight:700;margin-bottom:5px;color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.metric{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(19,13,23,.3)}
+.metric b{display:block;font-size:20px;line-height:1.25;margin-top:2px;color:var(--ink);font-variant-numeric:tabular-nums}.metric small{color:var(--muted);font-size:12.5px;font-weight:600}
+.good{color:var(--green)}.bad{color:var(--red)}.gold{color:var(--gold)}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:12px 2px;border-top:1px solid var(--grid)}
+.row:first-child{border-top:0}.row-main{min-width:0;flex:1}.row-title{font-weight:600;color:var(--ink);overflow-wrap:anywhere}.meta{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.money{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;color:var(--ink)}.amount{text-align:right}
+.chip{display:inline-block;border-radius:99px;padding:4px 9px;margin:6px 4px 0 0;background:var(--green-soft);color:var(--green);font-size:11.5px;font-weight:700}
+.chip.gold{background:var(--gold-soft);color:var(--gold)}.chip.rose{background:var(--rose-soft);color:var(--rose)}
+.bar{position:relative;height:9px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;margin-top:9px}
+.bar i{position:relative;display:block;height:100%;border-radius:99px;transition:width .55s cubic-bezier(.2,.7,.2,1)}
+.bar i.bar-green{background:var(--green)}.bar i.bar-orange{background:var(--gold)}.bar i.bar-red{background:var(--red)}.bar i.bar-accent{background:linear-gradient(90deg,var(--rose),var(--gold))}
+.bar-label{display:flex;justify-content:space-between;gap:8px;margin-top:5px;color:var(--muted);font-size:12px;font-weight:500}
+.bar-label span:last-child{text-align:right;white-space:nowrap}
+.tick{display:inline-grid;place-items:center;width:28px;height:28px;padding:0;margin-right:8px;border-radius:9px;vertical-align:-7px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-size:15px;min-height:0}
+.tick.on{background:var(--green);border-color:var(--green);color:#10261e}
+.used-btn{display:inline-block;padding:6px 10px;margin:8px 0 0;border-radius:9px;font-size:12px;color:var(--rose);background:var(--rose-soft);border:0;min-height:0}
+.inline-edit{display:flex;gap:6px;align-items:center;margin-top:8px}.inline-edit input{min-width:0;width:118px;padding:9px;border:1px solid var(--rose);border-radius:10px;background:rgba(255,255,255,.06);color:var(--ink)}
+.edit-only{display:none}.edit .edit-only{display:inline-block}.edit .addform{display:flex}
+.addform{display:none;gap:7px;flex-wrap:wrap;margin-top:10px}.addform input{min-width:0;padding:9px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.06);color:var(--ink)}
+.addform input[type=text]{flex:2}.addform input[type=number]{flex:1}
+.section-label{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:16px 0 4px}
+.sweep{background:rgba(19,13,23,.3);border:1px solid var(--grid);border-radius:14px;padding:13px;margin-top:12px}
+.sweep-head{display:flex;justify-content:space-between;gap:10px}.charge-dots{display:flex;gap:5px;margin-top:9px}.charge-dots i{display:block;width:28px;height:8px;background:rgba(255,255,255,.1);border-radius:9px}.charge-dots i.on{background:var(--gold)}
+.fx{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.fx label{font-size:12px;font-weight:600;color:var(--muted)}.fx input{width:100%;padding:10px;margin-top:4px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.06);color:var(--ink);font-size:16px;font-weight:600}.fx input:focus{outline:0;border-color:var(--rose)}
+.journey{position:relative;padding-left:26px}.journey:before{content:"";position:absolute;left:9px;top:13px;bottom:13px;width:2px;background:var(--grid)}
+.move{position:relative;padding:8px 0}.move:before{content:"";position:absolute;left:-22px;top:12px;width:10px;height:10px;border-radius:50%;background:var(--rose)}
+.move b{display:block;color:var(--ink)}
+.loan{border:1px solid var(--line);border-left:3px solid var(--rose);border-radius:14px;padding:12px;margin-top:8px;background:rgba(19,13,23,.3)}
+.loan-top{display:flex;justify-content:space-between;gap:8px}.loan-top b{color:var(--ink)}.loan-target{background:var(--green-soft);border-radius:11px;padding:9px 10px;margin-top:8px;font-size:12.5px}
+.tx{border:1px solid var(--line);border-left:3px solid var(--rose);border-radius:13px;padding:10px;margin-top:7px}.tx.internal{border-left-color:var(--blue)}.tx.reserve{border-left-color:var(--gold)}
+.tx-top{display:flex;justify-content:space-between;gap:8px}.tx-top b{color:var(--ink)}.txedit{display:none;margin-top:10px}.tx.open .txedit{display:block}.txedit label{display:block;color:var(--muted);font-size:11px;font-weight:600;margin-top:7px}.txedit input,.txedit select{width:100%;padding:9px;margin-top:3px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.06);color:var(--ink)}
+.txedit select option{color:#111}
+.analyst{display:flex;gap:11px;align-items:flex-start;background:rgba(19,13,23,.3);border:1px solid var(--grid);border-radius:14px;padding:12px;margin-top:9px}.analyst-icon{font-size:24px}.analyst b{color:var(--ink)}
+.empty{color:var(--muted);padding:10px 0}
+.savebar{position:fixed;z-index:50;left:50%;bottom:calc(74px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(620px,calc(100% - 20px));
+ display:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid rgba(255,255,255,.2);border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,.45);font-size:14px}
+.sentence{font-size:19px;line-height:1.4;color:var(--ink);padding:8px 0;border-top:1px solid var(--grid)}.sentence:first-child{border-top:0}.sentence b{color:var(--gold)}.sentence.ok b{color:var(--green)}.sentence.warn b{color:var(--red)}
+.primary.big{width:100%;margin-top:12px;padding:14px;font-size:16px;border-radius:14px}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.quick button{padding:9px 12px;font-size:13px;border-radius:999px;min-height:0}.quick button.more{color:var(--muted);background:transparent}
+.newitem{display:none;margin-top:8px;gap:6px}.newitem.on{display:flex;flex-wrap:wrap}.newitem input,.newitem select{flex:1;min-width:120px;padding:9px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.06);color:var(--ink)}
+.gate{position:fixed;inset:0;z-index:300;color:var(--ink);background:radial-gradient(circle at 15% -10%,rgba(153,74,136,.35),transparent 40%),linear-gradient(180deg,#1c1221,#130d17 50%);display:flex;align-items:center;justify-content:center;padding:24px}
+.gatebox{width:100%;max-width:340px;text-align:center}.gate .gbrand{font-size:11px;letter-spacing:.14em;font-weight:600;color:var(--muted)}
+.gate input{width:100%;padding:12px;font-size:18px;text-align:center;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.08);color:var(--ink);margin-top:14px}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:18px 4px}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;background:rgba(19,13,23,.94);backdrop-filter:blur(15px);border-top:1px solid var(--grid);padding:10px 6px max(12px,env(safe-area-inset-bottom))}
+.nav button{background:none;border:0;color:var(--muted);font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 8px;min-height:0}
+.nav button span{font-size:20px;line-height:1}.nav button.on{color:var(--ink)}
+.home-list .row{align-items:center}.home-list .row b{color:var(--ink)}
+.home-list .go{background:var(--rose-soft);color:var(--rose);border:0;border-radius:999px;padding:9px 14px;font-size:13px;font-weight:700;min-height:0;white-space:nowrap}
+@media(max-width:380px){body{padding-left:10px;padding-right:10px}.hero-grid{grid-template-columns:1fr 1fr}.hero-stat:last-child{grid-column:1/-1}.hero-number{font-size:28px}.metric b{font-size:18px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="tabtitle">
+ <div><h1 id="tabTitle">Home</h1><p><span id="cycle">Loading this month...</span></p></div>
+ <button id="editBtn" onclick="toggleEdit()">Edit plan</button>
+</div>
+
+<!-- HOME -->
+<div class="tab-panel on" id="tab-home">
+ <div class="hero">
+  <div class="eyebrow">Money received this salary cycle</div><div class="hero-number" id="salary">$0</div>
+  <div class="hero-grid">
+   <div class="hero-stat"><small>Household used</small><b id="heroUsed">RWF 0</b></div>
+   <div class="hero-stat"><small>Available to use</small><b id="heroAvailable">RWF 0</b></div>
+   <div class="hero-stat"><small>Hybrid charge fund</small><b id="heroEv">RWF 0</b></div>
+  </div>
+ </div>
+ <div class="notice" id="notice"></div>
+ <div class="section" id="homeSentences"><div class="body" style="padding-top:14px">
+  <div class="sentence" id="sBills">Checking the house payments…</div>
+  <div class="sentence" id="sMoney"></div>
+  <div class="sentence" id="sHoza"></div>
+  <button class="primary big hide" id="needName" onclick="setTab('messages')">Payments need a name</button>
+ </div></div>
+ <div class="section home-list"><div class="body" style="padding-top:4px">
+  <div class="row"><div><b>Home and family plan</b><div class="meta" id="sumPlan">Tick payments and enter totals used</div></div><button class="go" onclick="setTab('plan')">Open</button></div>
+  <div class="row"><div><b>Collo pocket money</b><div class="meta" id="sumPocket">Every charge and what is left</div></div><button class="go" onclick="setTab('pocket')">Open</button></div>
+  <div class="row"><div><b>Loans</b><div class="meta" id="sumLoans">What was paid, reborrowed and still owed</div></div><button class="go" onclick="setTab('loans')">Open</button></div>
+  <div class="row"><div><b>Money messages</b><div class="meta" id="sumSms">Recent SMS and what needs an answer</div></div><button class="go" onclick="setTab('messages')">Open</button></div>
+ </div></div>
+ <div class="section">
+  <div class="sechead"><span class="stepno">1</span><span>Money received<span class="summary-sub">Salary and the rates used</span></span></div>
+  <div class="body">
+   <div id="overview"></div>
+   <div class="fx">
+    <div><label>1 USD in KES</label><input id="fxUK" type="number" step=".01" inputmode="decimal"></div>
+    <div><label>1 KES in RWF</label><input id="fxKR" type="number" step=".01" inputmode="decimal"></div>
+   </div>
+   <div class="meta">Change the rates, then save. Both phones will use the same figures.</div>
+   <div id="moneyIn"></div>
+  </div>
+ </div>
+ <div class="section">
+  <div class="sechead"><span class="stepno">2</span><span>Money movements<span class="summary-sub">Where the salary went</span></span></div>
+  <div class="body"><div class="journey" id="journey"></div><div id="hoza"></div></div>
+ </div>
+</div>
+
+<!-- PLAN -->
+<div class="tab-panel" id="tab-plan">
+ <div class="section">
+  <div class="sechead"><span class="stepno">3</span><span>Home and family budget<span class="summary-sub">Tick payments and enter the total used</span></span></div>
+  <div class="body">
+   <div class="grid2" id="houseTotals"></div>
+   <div class="section-label">The house</div><div id="home"></div>
+   <div class="addform"><input id="addHomeName" type="text" placeholder="New house item"><input id="addHomeAmt" type="number" placeholder="RWF"><button onclick="addItem('home')">Add</button></div>
+   <div class="section-label">Family money</div><div id="family"></div>
+   <div class="addform"><input id="addFamilyName" type="text" placeholder="New family item"><input id="addFamilyAmt" type="number" placeholder="RWF"><button onclick="addItem('family')">Add</button></div>
+   <div class="sweep" id="evFund"></div>
+  </div>
+ </div>
+ <div class="section">
+  <div class="sechead"><span class="stepno">7</span><span>House project and later plans<span class="summary-sub">Architect, card and paused items</span></span></div>
+  <div class="body"><div class="section-label" id="architectLabel">House Phase A</div><div id="architect"></div><div class="section-label">Card watch</div><div id="card"></div><div class="section-label">Paused this month</div><div id="paused"></div></div>
+ </div>
+</div>
+
+<!-- POCKET -->
+<div class="tab-panel" id="tab-pocket">
+ <div class="section">
+  <div class="sechead"><span class="stepno">4</span><span>Collo pocket money<span class="summary-sub">Every charge and what is left</span></span></div>
+  <div class="body" id="pocket"></div>
+ </div>
+</div>
+
+<!-- LOANS -->
+<div class="tab-panel" id="tab-loans">
+ <div class="section">
+  <div class="sechead"><span class="stepno">5</span><span>Loans and planned reborrowing<span class="summary-sub">What was paid, reborrowed and still owed</span></span></div>
+  <div class="body"><div id="loanTotals"></div><div id="loans"></div></div>
+ </div>
+</div>
+
+<!-- MESSAGES -->
+<div class="tab-panel" id="tab-messages">
+ <div class="section">
+  <div class="sechead"><span class="stepno">6</span><span>SMS ledger<span class="summary-sub" id="smsSummary">Recent money messages</span></span></div>
+  <div class="body">
+   <div class="analyst" id="analyst"></div>
+   <div id="spending"></div>
+  </div>
+ </div>
+</div>
+
+<div class="gate hide" id="gate"><div class="gatebox"><div class="gbrand">ONDACHI FAMILY BUDGET</div>
+<h2 style="font-size:20px;font-weight:700;margin:8px 0 0;color:var(--ink)">Enter the family code</h2>
+<input type="text" id="gateIn" placeholder="Family code" autocapitalize="characters" autocorrect="off" autocomplete="off" onkeydown="if(event.key==='Enter')submitGate()">
+<div class="hide" id="gateErr" style="color:var(--red);font-size:13px;margin-top:10px">That code did not work.</div>
+<button class="primary" style="width:100%;margin-top:14px" onclick="submitGate()">Open</button>
+<div class="meta" style="margin-top:14px">Saved on this phone. You only type it once.</div></div></div>
+<footer id="footer"></footer>
+<div class="savebar" id="savebar"><span id="saveMsg">Changes are not saved yet</span><button class="primary" onclick="saveBudget()">Save for both of us</button></div>
+<nav class="nav" aria-label="Ondachi Budget">
+ <button id="nav-home" class="on" onclick="setTab('home')"><span>◉</span>Home</button>
+ <button id="nav-plan" onclick="setTab('plan')"><span>☰</span>Plan</button>
+ <button id="nav-pocket" onclick="setTab('pocket')"><span>◎</span>Pocket</button>
+ <button id="nav-loans" onclick="setTab('loans')"><span>↘</span>Loans</button>
+ <button id="nav-messages" onclick="setTab('messages')"><span>✉</span>Messages</button>
+</nav>
+
+<script>
+const q=id=>document.getElementById(id);
+const F=n=>(Number(n)||0).toLocaleString("en-KE",{maximumFractionDigits:0});
+const D=n=>(Number(n)||0).toLocaleString("en-KE",{minimumFractionDigits:0,maximumFractionDigits:2});
+const H=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function progressBar(pct,label,tone,remainingLabel){
+ const p=Math.max(0,Math.min(100,Number(pct)||0));
+ const cls=tone==="accent"?"bar-accent":tone==="good"?"bar-green":p>=85?"bar-red":p>=65?"bar-orange":"bar-green";
+ const left=remainingLabel?`${p.toFixed(0)}% used`:label,right=remainingLabel||`${p.toFixed(0)}%`;
+ return `<div class="bar" role="progressbar" aria-label="${H(label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.toFixed(0)}"><i class="${cls}" style="width:${p}%"></i></div><div class="bar-label"><span>${H(left)}</span><span>${H(right)}</span></div>`;
+}
+const URL_WHO=(new URLSearchParams(location.search).get('who')||'').replace(/^h/i,'H').replace(/^c/i,'C');
+let S=null,B=null,C={version:1,items:{}},editing=false,dirty=false,actualEdit=null,planEdit=null,txOpen=null,pendingDelete=null;
+const API='https://script.google.com/macros/s/AKfycbw9t8lTgxI_lJX-gksw6zbZAna1pMNHzwwRabJ-VrbcMLzfXWT5RXMB9u0LJdmQMDXh/exec';let CODE=localStorage.getItem('budgetcode')||'';
+function apiGet(params){return fetch(API+'?code='+encodeURIComponent(CODE)+'&'+params+'&_='+Date.now(),{cache:'no-store'}).then(r=>r.json())}
+function apiPost(action,body){return fetch(API+'?code='+encodeURIComponent(CODE)+'&action='+action,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}).then(r=>r.json())}
+function runner(){let ok=null,fail=null;const o={withSuccessHandler(f){ok=f;return o},withFailureHandler(f){fail=f;return o},
+ apiGetState(){apiGet('state=1').then(x=>{if(x&&x.error&&/bad code/i.test(x.error))return showGate(true);ok&&ok(x)}).catch(e=>fail&&fail(e))},
+ apiSaveBudget(b,w){apiPost('saveplan',{budget:b,editor:w}).then(x=>ok&&ok(x)).catch(e=>fail&&fail(e))},
+ apiSaveTransactionCorrection(c,w){apiPost('savecorrection',{correction:c,editor:w}).then(x=>ok&&ok(x)).catch(e=>fail&&fail(e))}};return o}
+window.google={script:{}};Object.defineProperty(window.google.script,'run',{get(){return runner()}});
+function showGate(bad){document.getElementById('gate').classList.remove('hide');if(bad){CODE='';localStorage.removeItem('budgetcode');document.getElementById('gateErr').classList.remove('hide')}setTimeout(()=>{try{document.getElementById('gateIn').focus()}catch(e){}},60)}
+async function submitGate(){const v=document.getElementById('gateIn').value.trim();if(!v)return;CODE=v;try{const o=await apiGet('state=1');if(!o||o.error){CODE='';document.getElementById('gateErr').classList.remove('hide');return}localStorage.setItem('budgetcode',v);document.getElementById('gate').classList.add('hide');S=o;C=o.corrections||C;if(!dirty)B=o.budget||o.dash&&o.dash.family_budget;render()}catch(e){CODE='';document.getElementById('gateErr').textContent='No connection. Try again.';document.getElementById('gateErr').classList.remove('hide')}}
+function who(){let w=URL_WHO||localStorage.getItem("who");if(!w){w=confirm("Press OK for Collo, Cancel for Hoza")?"Collo":"Hoza";localStorage.setItem("who",w)}return w}
+function fx(){return (B&&B.fx)||{usd_kes:128.5,kes_rwf:11.2}}
+function money(n,c){return c==="USD"?"$"+D(n):(c==="RWF"?"RWF ":"KES ")+F(n)}
+function markDirty(){dirty=true;q("savebar").style.display="flex"}
+function toggleEdit(){editing=!editing;document.body.classList.toggle("edit",editing);q("editBtn").textContent=editing?"Finish editing":"Edit plan";render()}
+function budgetActual(sec,label){const a=S&&S.dash&&S.dash.budget_actuals||[];return a.find(x=>x.section===sec&&x.label===label)||{}}
+function dashItemPaid(sec,label){const a=S&&S.dash&&S.dash.family_budget&&S.dash.family_budget[sec]||[];const x=a.find(v=>v.label===label);return !!(x&&x.paid)}
+function usedInfo(sec,item){
+ const x=budgetActual(sec,item.label),sms=Number(x.spent_rwf)||0,manual=Number(item.manual_actual_rwf)||0;
+ const spent=Math.max(sms,manual),reserved=Number(x.reserved_rwf)||0,refund=Number(x.reimbursable_rwf)||0;
+ const paid=!!item.paid||dashItemPaid(sec,item.label);
+ const evidenced=spent+reserved+refund;
+ const used=item.available?0:(evidenced||((paid&&!item.unplanned)?Number(item.rwf)||0:0));
+ const balance=Math.max(0,(Number(item.rwf)||0)-used);
+ const sweep=(!item.available&&paid&&spent>0&&balance>0&&item.rwf>0&&balance/item.rwf<.05)?balance:0;
+ return {sms,manual,spent,reserved,refund,paid,used,balance,sweep};
+}
+function budgetNumbers(){
+ let planned=0,used=0,sweep=0,availableLines=0;
+ ["home","family"].forEach(sec=>(B[sec]||[]).forEach(item=>{
+  if(item.unplanned)return;planned+=Number(item.rwf)||0;
+  const x=usedInfo(sec,item);used+=x.used;sweep+=x.sweep;if(item.available)availableLines+=Number(item.rwf)||0;
+ }));
+ return {planned,used,sweep,available:Math.max(0,planned-used-sweep),availableLines};
+}
+function togglePaid(sec,idx){if(B[sec][idx].available)return;B[sec][idx].paid=!B[sec][idx].paid;markDirty();render()}
+function openActual(sec,idx){actualEdit=actualEdit&&actualEdit.sec===sec&&actualEdit.idx===idx?null:{sec,idx};planEdit=null;render();const x=q("actualInput");if(x){x.focus();x.select()}}
+function setActual(sec,idx){const x=q("actualInput"),n=Number(String(x.value).replace(/[ ,]/g,""));if(!Number.isFinite(n)||n<0)return;B[sec][idx].manual_actual_rwf=n;B[sec][idx].paid=true;actualEdit=null;markDirty();render()}
+function openPlan(sec,idx){planEdit=planEdit&&planEdit.sec===sec&&planEdit.idx===idx?null:{sec,idx};actualEdit=null;render();const x=q("planInput");if(x){x.focus();x.select()}}
+function setPlan(sec,idx){const n=Number(q("planInput").value);if(!Number.isFinite(n)||n<0)return;B[sec][idx].rwf=n;planEdit=null;markDirty();render()}
+function removeItem(sec,idx){if(pendingDelete===sec+"|"+idx){B[sec].splice(idx,1);pendingDelete=null;markDirty();render()}else{pendingDelete=sec+"|"+idx;render()}}
+function addItem(sec){const a=q(sec==="home"?"addHomeName":"addFamilyName"),b=q(sec==="home"?"addHomeAmt":"addFamilyAmt"),n=Number(b.value);if(!a.value.trim()||!Number.isFinite(n)||n<=0)return;(B[sec]||=[]).push({label:a.value.trim(),rwf:n,unplanned:true});a.value="";b.value="";markDirty();render()}
+function actualDetail(x,item){
+ const bits=[],tracked=x.spent+x.reserved+x.refund;if(x.spent)bits.push(`Used RWF ${F(x.spent)}`);if(x.reserved)bits.push(`Reserved RWF ${F(x.reserved)}`);if(x.refund)bits.push(`Refund expected RWF ${F(x.refund)}`);
+ if(x.sweep)bits.push(`RWF ${F(x.sweep)} moved to hybrid charging`);else if(!item.available&&tracked)bits.push(`RWF ${F(x.balance)} left`);else if(x.paid)bits.push("Marked paid; total used not entered");
+ return bits.join(" · ");
+}
+function displayLabel(label){
+ if(/^Fuel \(/i.test(label||""))return "Fuel for both cars";
+ if(/^Food & house shopping/i.test(label||""))return "Food and house shopping";
+ if(/^Gym /i.test(label||""))return "Gym: coach and membership";
+ return label||"";
+}
+function budgetRow(sec,item,idx){
+ const x=usedInfo(sec,item),isActual=actualEdit&&actualEdit.sec===sec&&actualEdit.idx===idx,isPlan=planEdit&&planEdit.sec===sec&&planEdit.idx===idx;
+ const limit=Number(item.rwf)||0,tracked=x.spent+x.reserved+x.refund,itemPct=limit?tracked/limit*100:0;
+ const barText=tracked?`RWF ${F(tracked)} of RWF ${F(limit)} used`:(x.paid?"Marked paid; enter the total used to fill this bar":`No spending recorded yet · RWF ${F(limit)} budget`);
+ const remainingPct=Math.max(0,100-Math.max(0,Math.min(100,itemPct)));
+ if(item.available)return `<div class="row"><div class="row-main"><div class="row-title">Available to assign</div><div class="meta">Funded money waiting for its next job</div></div><div class="amount money good">RWF ${F(item.rwf)}</div></div>`;
+ return `<div class="row"><div class="row-main"><div class="row-title"><button class="tick ${x.paid?"on":""}" onclick="togglePaid('${sec}',${idx})">${x.paid?"✓":""}</button>${H(displayLabel(item.label))}</div>
+  <div class="meta">${item.via?"Managed by Hoza · ":""}${item.due?H(item.due)+" · ":""}${actualDetail(x,item)||"Nothing used yet"}</div>
+  ${limit?progressBar(itemPct,barText,"",`${remainingPct.toFixed(0)}% remaining`):""}
+  ${item.unplanned?`<span class="chip rose">Money still to find</span>`:""}${x.sweep?`<span class="chip">Small balance moved</span>`:""}
+  <button class="used-btn" onclick="openActual('${sec}',${idx})">${x.spent||x.manual?"Change total used":"Enter total used"}</button>
+  ${isActual?`<div class="inline-edit"><input id="actualInput" type="number" inputmode="numeric" value="${x.spent||0}"><button class="primary" onclick="setActual('${sec}',${idx})">Use this total</button></div>`:""}
+ </div><div class="amount">
+  ${isPlan?`<div class="inline-edit"><input id="planInput" type="number" inputmode="numeric" value="${item.rwf}"><button onclick="setPlan('${sec}',${idx})">OK</button></div>`:`<div class="money">RWF ${F(item.rwf)}</div><div class="meta">budget</div>`}
+  <button class="edit-only" onclick="openPlan('${sec}',${idx})">Edit</button><button class="edit-only danger" onclick="removeItem('${sec}',${idx})">${pendingDelete===sec+"|"+idx?"Tap again":"Remove"}</button>
+ </div></div>`;
+}
+function renderBudget(){
+ q("home").innerHTML=(B.home||[]).map((x,i)=>budgetRow("home",x,i)).join("");
+ q("family").innerHTML=(B.family||[]).map((x,i)=>budgetRow("family",x,i)).join("");
+ const n=budgetNumbers(),pct=n.planned?Math.min(100,(n.used+n.sweep)/n.planned*100):0;
+ q("houseTotals").innerHTML=`<div class="metric"><small>Whole family plan</small><b>RWF ${F(n.planned)}</b></div><div class="metric"><small>Used or reserved</small><b>RWF ${F(n.used)}</b></div><div class="metric"><small>Still available</small><b class="good">RWF ${F(n.available)}</b></div><div class="metric"><small>Plan completed</small><b>${pct.toFixed(0)}%</b>${progressBar(pct,`RWF ${F(n.used+n.sweep)} of RWF ${F(n.planned)} assigned or used`,"accent")}</div>`;
+ const sources=[];["home","family"].forEach(sec=>(B[sec]||[]).forEach(i=>{const x=usedInfo(sec,i);if(x.sweep)sources.push(`${displayLabel(i.label)}: RWF ${F(x.sweep)}`)}));
+ const evUsed=Number(budgetActual("fund","Plug-in hybrid charging fund").spent_rwf)||0;
+ const evBalance=Math.max(0,n.sweep-evUsed),charges=Math.floor(evBalance/7500),after=evBalance-charges*7500;
+ q("evFund").innerHTML=`<div class="sweep-head"><div><div class="eyebrow">Plug-in hybrid charging fund</div><div class="meta">${sources.length?H(sources.join(" · ")):"No small balances moved yet"}${evUsed?` · RWF ${F(evUsed)} used for charging`:""}</div></div><div class="money good">RWF ${F(evBalance)}</div></div>
+  <div class="charge-dots">${[0,1,2,3].map(i=>`<i class="${i<charges?"on":""}"></i>`).join("")}</div><div class="meta">${charges} full charge${charges===1?"":"s"} at about RWF 7,500${n.sweep?` · RWF ${F(after)} stays in this fund`:""}</div>`;
+ q("heroUsed").textContent="RWF "+F(n.used);q("heroAvailable").textContent="RWF "+F(n.available);q("heroEv").textContent="RWF "+F(evBalance);
+}
+function parentKpi(label){return (S&&S.dash&&S.dash.parent_plan&&S.dash.parent_plan.kpis||[]).find(x=>(x.label||"").toLowerCase().includes(label))}
+function renderOverview(){
+ const sal=parentKpi("salary"),conv=parentKpi("convert"),r=fx(),salary=sal?sal.value:"$6,454.21";
+ q("salary").textContent=salary;q("cycle").textContent=B.window||B.cycle||"Current salary cycle";
+ q("overview").innerHTML=`<div class="panel"><div class="panel-title">Salary received</div><div class="row"><span>${H(sal&&sal.label||"Salary")}</span><span class="money good">${H(salary)}</span></div>
+  ${sal&&sal.sub?`<div class="meta">${H(sal.sub)}</div>`:""}${conv?`<div class="row"><div><b>${H(conv.label)}</b><div class="meta">${H(conv.sub)}</div></div><span class="good">${H(conv.value)}</span></div>`:""}
+  <div class="row"><span>Rates used in this plan</span><span class="money">$1 = KES ${D(r.usd_kes)}<br>KES 1 = RWF ${D(r.kes_rwf)}</span></div></div>`;
+ q("fxUK").value=r.usd_kes;q("fxKR").value=r.kes_rwf;
+ const mi=S&&S.dash&&S.dash.money_in||[];
+ q("moneyIn").innerHTML=mi.length?`<div class="section-label">Other money received</div>`+mi.slice(0,8).map(x=>`<div class="row"><div>${H(x.salary?"Salary":x.who||x.cat||"Money in")}<div class="meta">${H((x.ts||"").slice(5,16))}</div></div><span class="money good">+${money(x.amount,x.currency)}</span></div>`).join(""):"";
+}
+function flowDone(s,i){if(s.done)return true;const a=S&&S.dash&&S.dash.family_budget&&S.dash.family_budget.flow||[];const x=a[i]&&a[i].label===s.label?a[i]:a.find(y=>y.label===s.label);return !!(x&&x.done)}
+function renderJourney(){
+ const recon=S&&S.dash&&S.dash.parent_plan&&S.dash.parent_plan.recon||[];let pool=0;
+ const simpleLabel=label=>{
+  if(/^Salary as KES/i.test(label))return "Salary converted to Kenya shillings";
+  if(/^P&R borrow-back/i.test(label))return "Planned reborrowing comes in";
+  if(/^Home /i.test(label))return "Home budget";
+  if(/^Family /i.test(label))return "Family money and Collo pocket";
+  if(/^Subscriptions/i.test(label))return "Subscriptions";
+  if(/^Loan contracts/i.test(label))return "Bank loan payments";
+  if(/^P&R payments/i.test(label))return "M-PESA loan payments";
+  if(/^Architect/i.test(label))return "Architect payment";
+  return label;
+ };
+ const moves=recon.filter(x=>x.dir!=="net");
+ const balanceText=()=>Math.abs(pool)<1?"The plan balances to zero.":pool<0?"Current deficit: KES "+F(Math.abs(pool)):"Available to assign after the planned movements: KES "+F(pool);
+ q("journey").innerHTML=(moves.length?moves:[]).map(x=>{const amount=Number(x.kes)||0;pool+=amount;return `<div class="move"><b>${H(simpleLabel(x.label))}</b><span class="money ${amount>=0?"good":""}">${amount>=0?"+":"−"}KES ${F(Math.abs(amount))}</span><div class="meta">KES ${F(Math.max(0,pool))} left after this step</div></div>`}).join("")+
+  `<div class="panel"><b>${balanceText()}</b><div class="meta">No money disappears. Unused money stays visible until it gets another job.</div></div>`;
+ const hp=S&&S.dash&&S.dash.hoza_pipeline,plan=B.hoza_planned_rwf||0;if(!hp){q("hoza").innerHTML="";return}
+ q("hoza").innerHTML=`<div class="section-label">Money delivered through Hoza</div><div class="panel"><div class="row"><div><span>Sent to Eric Ayirwanda</span><div class="meta">Money agent for the KES to RWF exchange</div></div><span class="money">KES ${F(hp.kes_exchange_sent)}</span></div><div class="row"><span>Collo pocket money returned</span><span class="money">RWF ${F(hp.rwf_back_pocket)}</span></div><div class="row"><span>Delivered to Hoza</span><span class="money good">RWF ${F(hp.rwf_to_hoza)} of ${F(plan)}</span></div>${progressBar(plan?hp.rwf_to_hoza/plan*100:0,`RWF ${F(hp.rwf_to_hoza)} of RWF ${F(plan)} delivered`,"good")}</div>`;
+}
+function renderPocket(){
+ const idx=(B.family||[]).findIndex(x=>/collo pocket/i.test(x.label)),item=idx>=0?B.family[idx]:null;if(!item){q("pocket").innerHTML='<div class="empty">Pocket money is not in this plan.</div>';return}
+ const x=usedInfo("family",item),rows=S&&S.dash&&S.dash.recent||[];
+ const flowPocket=(B.flow||[]).find(v=>v.label==="Collo pocket money")||{};
+ const original=Math.max(Number(item.rwf)||0,Number(flowPocket.rwf)||0);
+ const movedToFuel=Math.max(0,original-(Number(item.rwf)||0));
+ const recentTx=rows.filter(r=>r.dir==="out"&&r.budget_section==="family"&&r.budget_label===item.label);
+ const seen=new Set(recentTx.map(r=>r.tx_key));
+ const olderTx=Object.values(C&&C.items||{}).filter(r=>r.budget_section==="family"&&r.budget_label===item.label&&r.currency==="RWF"&&!seen.has(r.tx_key))
+  .map(r=>({tx_key:r.tx_key,ts:r.timestamp,amount:r.amount,currency:r.currency,who:r.recipient_label||r.recipient,cat:r.category}));
+ const tx=recentTx.concat(olderTx).sort((a,b)=>String(a.ts||"").localeCompare(String(b.ts||"")));
+ const open=actualEdit&&actualEdit.sec==="family"&&actualEdit.idx===idx;
+ const pct=item.rwf?Math.min(100,x.spent/item.rwf*100):0;
+ q("pocket").innerHTML=`<div class="grid2"><div class="metric"><small>Original pocket allocation</small><b>RWF ${F(original)}</b></div><div class="metric"><small>Moved to fuel</small><b class="gold">RWF ${F(movedToFuel)}</b></div><div class="metric"><small>Spent from pocket</small><b class="bad">RWF ${F(x.spent)}</b></div><div class="metric"><small>Still in my pocket</small><b class="good">RWF ${F(x.balance)}</b></div></div>
+  ${progressBar(pct,`RWF ${F(x.spent)} of RWF ${F(item.rwf)} spent`)}<div class="meta">The saved trail starts at RWF ${F(original)}. After RWF ${F(movedToFuel)} moved to fuel, RWF ${F(item.rwf)} remained as the spendable pocket budget.</div><button class="used-btn" onclick="openActual('family',${idx})">Correct the total used</button>
+  ${open?`<div class="inline-edit"><input id="pocketActualInput" type="number" inputmode="numeric" value="${x.spent||0}"><button class="primary" onclick="setPocketActual(${idx})">Use this total</button></div>`:""}
+  <div class="section-label">Pocket money trail</div>
+  <div class="row"><div><b>Original pocket allocation</b><div class="meta">Start of this salary cycle</div></div><span class="money good">+RWF ${F(original)}</span></div>
+  ${movedToFuel?`<div class="row"><div><b>Moved to the fuel budget</b><div class="meta">Budget reallocation</div></div><span class="money gold">−RWF ${F(movedToFuel)}</span></div>`:""}
+  ${tx.length?tx.map(r=>`<div class="row"><div>${H(r.who||r.cat)}<div class="meta">${H(r.cat)} · ${H((r.ts||"").slice(5,16))}</div></div><span class="money bad">−RWF ${F(r.amount)}</span></div>`).join(""):'<div class="empty">No pocket-money charges found yet.</div>'}
+  <div class="row"><div><b>Current pocket balance</b><div class="meta">Original minus fuel movement and pocket charges</div></div><span class="money good">RWF ${F(x.balance)}</span></div>`;
+}
+function setPocketActual(idx){const x=q("pocketActualInput"),n=Number(String(x.value).replace(/[ ,]/g,""));if(!Number.isFinite(n)||n<0)return;B.family[idx].manual_actual_rwf=n;B.family[idx].paid=true;actualEdit=null;markDirty();render()}
+function loanPlan(name){
+ const p=S&&S.dash&&S.dash.parent_plan&&S.dash.parent_plan.loans||[],n=(name||"").toLowerCase();
+ return p.find(x=>{const a=(x.name||"").toLowerCase();return (n.includes("lendplus")&&a.includes("lendplus"))||(n.includes("zenka")&&a.includes("zenka"))||(n.includes("koro")&&a.includes("koro"))||(n.includes("kcb")&&a.includes("kcb"))||(n.includes("i&m")&&a.includes("i&m"))})||null
+}
+function liveLoan(x){const a=S&&S.dash&&S.dash.family_budget&&S.dash.family_budget.loans&&S.dash.family_budget.loans.all||[];return a.find(y=>y.name===x.name)||x}
+function renderLoans(){
+ const L=B.loans||{},all=L.all||[],d=S&&S.dash&&S.dash.debt||{};
+ q("loanTotals").innerHTML=`<div class="grid2"><div class="metric"><small>Still owed</small><b>${H(L.total_line||"Loading")}</b></div><div class="metric"><small>Paid this cycle</small><b class="good">KES ${F(d.paid_kes)}</b></div><div class="metric"><small>Reborrowed</small><b class="bad">KES ${F(d.reborrowed_kes)}</b></div><div class="metric"><small>Fuliza drawn</small><b class="bad">KES ${F(d.fuliza_drawn_kes)}</b></div></div>`;
+ q("loans").innerHTML=all.map(x=>{const lv=liveLoan(x),cur=lv.current_live!=null?lv.current_live:x.current,orig=Number(x.original)||0,cleared=orig?Math.max(0,Math.min(100,(orig-Number(cur||0))/orig*100)):0,plan=loanPlan(x.name),noteTarget=plan&&String(plan.note||"").match(/reborrow\s*([\d,]+)/i),target=plan&&(Number(plan.borrowed)||Number((noteTarget&&noteTarget[1]||"").replace(/,/g,"")))||0,re=Number(lv.reborrowed_cycle)||0,left=Math.max(0,target-re);
+  return `<div class="loan"><div class="loan-top"><div><b>${H(x.name)}</b><div class="meta">${H(x.ends||"")}</div></div><span class="money">${money(cur,x.cur)}</span></div>
+   ${lv.paid_cycle?`<span class="chip">Paid ${money(lv.paid_cycle,x.cur)}</span>`:""}${re?`<span class="chip rose">Reborrowed ${money(re,x.cur)}</span>`:""}
+   ${plan?`<div class="loan-target"><b>Planned reborrow: KES ${F(target)}</b><br>${re?`Already reborrowed KES ${F(re)} · `:""}KES ${F(left)} still planned${plan.note?`<div class="meta">${H(plan.note)}</div>`:""}</div>`:""}
+   ${orig?progressBar(cleared,`${cleared.toFixed(0)}% of the original balance repaid`,"good"):""}<div class="meta">${H(lv.note_live||x.note||"")}</div></div>`}).join("");
+}
+function correctionFor(r){return C&&C.items&&C.items[r.tx_key]||null}
+function budgetOptions(sec,label){let h='<option value="">No budget item</option>';["home","family","architect"].forEach(s=>(B[s]||[]).forEach(i=>{const v=encodeURIComponent(s+"|"+i.label),sel=s===sec&&i.label===label?" selected":"";h+=`<option value="${v}"${sel}>${H(i.label)}</option>`}));return h}
+const QUICK=[["Food","Food & drinks","spend"],["Fuel or transport","Fuel & transport","spend"],["House","House","spend"],["Family","Family support","spend"],["Pocket","Pocket money","spend"],["Loan","Loan repayment","spend"],["Between my accounts","Own-account movement","internal"],["Refund expected","Reimbursable","reimbursable"]];
+function renderSpending(){
+ const rows=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out"),unclear=unclearRows();
+ q("smsSummary").textContent=unclear.length?`${unclear.length} item${unclear.length===1?"":"s"} need an answer`:"Everything recent is clear";
+ q("analyst").innerHTML=`<div class="analyst-icon">🔎</div><div><b>${unclear.length?`${unclear.length} payment${unclear.length===1?"":"s"} need a name`:"Everything recent has a name"}</b><div class="meta">${unclear.length?"Tap the word that fits. Use More if you want to pick a budget item or add a new one.":"The analyst checks every hour and this list fills itself."}</div></div>`;
+ const ordered=unclear.concat(rows.filter(r=>!unclear.includes(r)));
+ q("spending").innerHTML=ordered.slice(0,30).map(r=>{const c=correctionFor(r),tok=encodeURIComponent(r.tx_key),open=txOpen===tok,t=c&&c.treatment||r.treatment||"spend",needs=unclear.includes(r);
+  const quick=needs&&!open?`<div class="quick">${QUICK.map(([lbl,cat,tr])=>`<button onclick="quickTx('${tok}','${H(cat)}','${tr}')">${lbl}</button>`).join("")}<button class="more" onclick="txOpen='${tok}';renderSpending()">More…</button></div>`:"";
+  return `<div class="tx ${H(t)} ${open?"open":""}"><div class="tx-top"><div><b>${H(c&&c.recipient_label||r.who||"Unknown")}</b><div class="meta">${H(c&&c.category||r.cat||"No name yet")} · ${H((r.ts||"").slice(5,16))}</div></div><span class="money bad">−${money(r.amount,r.currency)}</span></div>${quick}
+   ${needs&&!open?"":`<button class="used-btn" onclick="txOpen=txOpen==='${tok}'?null:'${tok}';renderSpending()">${c?"Change the name":(open?"Hide":"Give it a name")}</button>`}
+   <div class="txedit"><label>Who or where?</label><input id="txWho" value="${H(c&&c.recipient_label||r.who||"")}"><label>What was it for?</label><input id="txCat" value="${H(c&&c.category||r.cat||"")}"><label>How should it count?</label><select id="txTreatment"><option value="spend"${t==="spend"?" selected":""}>Spending or payment</option><option value="reserve"${t==="reserve"?" selected":""}>Reserved money</option><option value="internal"${t==="internal"?" selected":""}>Between my accounts</option><option value="reimbursable"${t==="reimbursable"?" selected":""}>Refund expected</option></select><label>Which budget item?</label><select id="txBudget" onchange="q('txNew').classList.toggle('on',this.value==='__new__')">${budgetOptions(c&&c.budget_section||r.budget_section,c&&c.budget_label||r.budget_label)}<option value="__new__">＋ Add a new item…</option></select><div class="newitem" id="txNew"><input id="txNewName" placeholder="Name of the new item"><select id="txNewSec"><option value="home">The house</option><option value="family">Family money</option><option value="architect">House project</option></select></div><button class="primary" style="margin-top:9px" onclick="saveTx('${tok}')">Save</button></div></div>`}).join("")||'<div class="empty">No spending messages yet.</div>';
+}
+function quickTx(token,cat,treatment){
+ const key=decodeURIComponent(token),r=(S.dash.recent||[]).find(x=>x.tx_key===key);if(!r)return;
+ const cor={tx_key:key,cycle:S.dash.cycle,timestamp:r.ts,amount:r.amount,currency:r.currency,recipient:r.who,recipient_label:r.who||"",category:cat,treatment:treatment,budget_section:"",budget_label:"",note:"One-tap answer in Ondachi Budget"};
+ google.script.run.withSuccessHandler(o=>{if(o&&o.ok){C=o.corrections;render()}else alert(o&&o.error||"Could not save")}).withFailureHandler(e=>alert(e)).apiSaveTransactionCorrection(cor,who())
+}
+function saveTx(token){
+ const key=decodeURIComponent(token),r=(S.dash.recent||[]).find(x=>x.tx_key===key);
+ let v=decodeURIComponent(q("txBudget").value||""),sec="",label="";
+ if(v==="__new__"){const nm=q("txNewName").value.trim(),ns=q("txNewSec").value;if(!nm){alert("Give the new item a name");return}
+  (B[ns]||=[]).push({label:nm,rwf:r.currency==="RWF"?Math.round(Number(r.amount)||0):0,unplanned:true});sec=ns;label=nm;markDirty();}
+ else{const p=v.indexOf("|");sec=p<0?"":v.slice(0,p);label=p<0?"":v.slice(p+1)}
+ const cor={tx_key:key,cycle:S.dash.cycle,timestamp:r.ts,amount:r.amount,currency:r.currency,recipient:r.who,recipient_label:q("txWho").value.trim(),category:q("txCat").value.trim(),treatment:q("txTreatment").value,budget_section:sec,budget_label:label,note:"Classified in Ondachi Budget"};
+ const finish=()=>google.script.run.withSuccessHandler(o=>{if(o&&o.ok){C=o.corrections;txOpen=null;render()}else alert(o&&o.error||"Could not save")}).withFailureHandler(e=>alert(e)).apiSaveTransactionCorrection(cor,who());
+ if(v==="__new__")google.script.run.withSuccessHandler(o=>{if(o&&o.ok){B=o.budget;dirty=false;q("savebar").style.display="none";finish()}else alert(o&&o.error||"Could not add the item")}).withFailureHandler(e=>alert(e)).apiSaveBudget(B,who());
+ else finish();
+}
+function renderMore(){
+ const architect=B.architect||[];q("architectLabel").style.display=architect.length?"":"none";
+ q("architect").innerHTML=architect.map((x,i)=>budgetRow("architect",x,i)).join("");
+ q("paused").innerHTML=(B.paused||[]).map(x=>`<div class="row"><span>${H(x.label)}</span><span class="meta">${H(x.note||"")}</span></div>`).join("")||'<div class="empty">Nothing paused.</div>';
+ const card=(B.loans&&B.loans.all||[]).find(x=>/absa visa, my own|credit card/i.test(x.name||"")),lv=card&&liveLoan(card);q("card").innerHTML=card?`<div class="row"><div><b>${H(card.name)}</b><div class="meta">${H(lv.note_live||card.note||"")}</div></div><span class="money">${money(lv.current_live!=null?lv.current_live:card.current,card.cur)}</span></div>`:'<div class="empty">Nothing flagged.</div>';
+}
+const TAB_TITLES={home:"Ondachi Budget",plan:"The plan",pocket:"Pocket money",loans:"Loans",messages:"Money messages"};
+function setTab(name){["home","plan","pocket","loans","messages"].forEach(t=>{q("tab-"+t).classList.toggle("on",t===name);q("nav-"+t).classList.toggle("on",t===name)});q("tabTitle").textContent=TAB_TITLES[name]||"Ondachi Budget";try{localStorage.setItem("budgetTab",name)}catch(e){}window.scrollTo({top:0})}
+function unclearRows(){const rows=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out");return rows.filter(x=>!correctionFor(x)&&(/unknown|uncategor/i.test((x.who||"")+" "+(x.cat||""))||!x.cat))}
+function renderHomeSentences(){
+ try{
+  const home=(B.home||[]),open=home.filter(it=>!it.available&&!it.unplanned&&!usedInfo("home",it).paid);
+  const sb=q("sBills");sb.className="sentence "+(open.length?"warn":"ok");
+  sb.innerHTML=open.length?`<b>${open.length} house payment${open.length===1?" is":"s are"} still open:</b> ${H(open.map(i=>displayLabel(i.label)).join(", "))}.`:`<b>All ${home.filter(i=>!i.unplanned).length} house payments are done.</b>`;
+  const idx=(B.family||[]).findIndex(x=>/collo pocket/i.test(x.label));
+  if(idx>=0){const x=usedInfo("family",B.family[idx]);q("sMoney").innerHTML=`Money left to spend: <b>RWF ${F(x.balance)}</b> (pocket money, RWF ${F(x.spent)} used so far).`}else q("sMoney").textContent="";
+  const hp=S&&S.dash&&S.dash.hoza_pipeline,plan=B.hoza_planned_rwf||0;
+  q("sHoza").innerHTML=hp?`Hoza has received <b>RWF ${F(hp.rwf_to_hoza)}</b> of RWF ${F(plan)} this cycle.`:"";
+  const u=unclearRows().length,btn=q("needName");btn.classList.toggle("hide",!u);btn.textContent=u?`${u} payment${u===1?"":"s"} need${u===1?"s":""} a name`:"";
+ }catch(e){}
+}
+function renderHomeSummaries(){ renderHomeSentences();
+ try{const n=budgetNumbers();q("sumPlan").textContent=`RWF ${F(n.used)} used of RWF ${F(n.planned)} · RWF ${F(n.available)} still available`;}catch(e){}
+ try{const idx=(B.family||[]).findIndex(x=>/collo pocket/i.test(x.label));if(idx>=0){const x=usedInfo("family",B.family[idx]);q("sumPocket").textContent=`RWF ${F(x.balance)} still in the pocket · RWF ${F(x.spent)} spent`;}}catch(e){}
+ try{const L=B.loans||{},d=S&&S.dash&&S.dash.debt||{};q("sumLoans").textContent=`${L.total_line||"Loading"} · paid KES ${F(d.paid_kes)} this cycle`;}catch(e){}
+ try{q("sumSms").textContent=q("smsSummary").textContent;}catch(e){}
+}
+function render(){
+ if(!B)return;q("notice").style.display="block";q("notice").textContent=B.status_line||"This cycle: the salary USD account keeps the land loan and subscriptions. The rest became shillings. Use the tabs at the bottom to move around.";
+ renderOverview();renderJourney();renderBudget();renderPocket();renderLoans();renderSpending();renderMore();
+ renderHomeSummaries();
+ const m=B.meta||{};q("footer").textContent=`${who()} is using this phone · last saved by ${m.last_edited_by||"family"} ${m.last_edited_at||""}`;
+}
+q("fxUK").addEventListener("input",()=>{if(!B)return;B.fx.usd_kes=Number(q("fxUK").value)||128.5;markDirty();renderJourney()});
+q("fxKR").addEventListener("input",()=>{if(!B)return;B.fx.kes_rwf=Number(q("fxKR").value)||11.2;markDirty();renderJourney()});
+function saveBudget(){q("saveMsg").textContent="Saving...";google.script.run.withSuccessHandler(o=>{if(o&&o.ok){B=o.budget;dirty=false;q("savebar").style.display="none";q("saveMsg").textContent="Changes are not saved yet";render()}else alert(o&&o.error||"Could not save")}).withFailureHandler(e=>alert(e)).apiSaveBudget(B,who())}
+function load(){if(!CODE)return showGate(false);google.script.run.withSuccessHandler(x=>{S=x;C=x.corrections||C;if(!dirty)B=x.budget||x.dash&&x.dash.family_budget;render()}).apiGetState()}
+try{const t=localStorage.getItem("budgetTab");if(t&&q("tab-"+t))setTab(t)}catch(e){}
+if(!CODE)showGate(false);else load();who();setInterval(()=>{if(!dirty&&!editing)load()},300000);
+</script>
+</body>
+</html>
