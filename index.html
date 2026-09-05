@@ -44,7 +44,7 @@ button:active{transform:scale(.97)}
 .sechead{display:flex;gap:12px;align-items:center;padding:15px 16px 12px;font-size:17px;font-weight:700;color:var(--ink)}
 .stepno{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:12px;font-size:16px;background:rgba(255,255,255,.06);border:1px solid var(--line)}
 .summary-sub{display:block;font-size:12.5px;color:var(--muted);font-weight:500;margin-top:1px}
-.body{padding:0 16px 16px}
+.body{padding:env(safe-area-inset-top,0px) 16px 16px}
 .panel{background:rgba(19,13,23,.3);border:1px solid var(--grid);border-radius:14px;padding:13px;margin-top:9px}
 .panel-title{font-size:16px;font-weight:700;margin-bottom:5px;color:var(--ink)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
@@ -98,7 +98,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px 4px}
 .nav button span{font-size:20px;line-height:1}.nav button.on{color:var(--ink)}
 .home-list .row{align-items:center}.home-list .row b{color:var(--ink)}
 .home-list .go{background:var(--rose-soft);color:var(--rose);border:0;border-radius:999px;padding:9px 14px;font-size:13px;font-weight:700;min-height:0;white-space:nowrap}
-@media(max-width:380px){body{padding-left:10px;padding-right:10px}.hero-grid{grid-template-columns:1fr 1fr}.hero-stat:last-child{grid-column:1/-1}.hero-number{font-size:28px}.metric b{font-size:18px}}
+@media(max-width:380px){body{padding-left:10px;padding-right:10px}.hero-grid{grid-template-columns:1fr 1fr}.hero-stat:last-child{grid-column:1/-1}.hero-number{font-size:28px}.metric b{font-size:18px;overflow-wrap:anywhere}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -337,9 +337,9 @@ function renderJourney(){
  const moves=recon.filter(x=>x.dir!=="net");
  const balanceText=()=>Math.abs(pool)<1?"The plan balances to zero.":pool<0?"Current deficit: KES "+F(Math.abs(pool)):"Available to assign after the planned movements: KES "+F(pool);
  q("journey").innerHTML=(moves.length?moves:[]).map(x=>{const amount=Number(x.kes)||0;pool+=amount;return `<div class="move"><b>${H(simpleLabel(x.label))}</b><span class="money ${amount>=0?"good":""}">${amount>=0?"+":"−"}KES ${F(Math.abs(amount))}</span><div class="meta">KES ${F(Math.max(0,pool))} left after this step</div></div>`}).join("")+
-  `<div class="panel"><b>${balanceText()}</b><div class="meta">No money disappears. Unused money stays visible until it gets another job.</div></div>`;
+  (pool>0?"":`<div class="panel"><b>${balanceText()}</b></div>`);
  const hp=S&&S.dash&&S.dash.hoza_pipeline,plan=B.hoza_planned_rwf||0;if(!hp){q("hoza").innerHTML="";return}
- q("hoza").innerHTML=`<div class="section-label">Money delivered through Hoza</div><div class="panel"><div class="row"><div><span>Sent to the exchange (Eric)</span><div class="meta">Shillings changed to francs; this is not Hoza's money</div></div><span class="money">KES ${F(hp.kes_exchange_sent)}</span></div><div class="row"><span>Collo pocket money returned</span><span class="money">RWF ${F(hp.rwf_back_pocket)}</span></div><div class="row"><span>Sent to Hoza (from the SMS)</span><span class="money good">RWF ${F(hp.rwf_to_hoza)} of ${F(plan)} planned through her</span></div>${progressBar(plan?hp.rwf_to_hoza/plan*100:0,`RWF ${F(hp.rwf_to_hoza)} of RWF ${F(plan)} sent`,"good")}</div>`;
+ q("hoza").innerHTML=`<div class="section-label">Money delivered through Hoza</div><div class="panel"><div class="row"><div><span>Sent to the exchange (Eric)</span><div class="meta">Shillings changed to francs; this is not Hoza's money</div></div><span class="money">KES ${F(hp.kes_exchange_sent)}</span></div><div class="row"><span>Collo pocket money returned</span><span class="money">RWF ${F(hp.rwf_back_pocket)}</span></div><div class="row"><span>Sent to Hoza (from the SMS)</span><span class="money good">RWF ${F(hp.rwf_to_hoza)}</span></div><div class="meta">RWF ${F(plan)} planned through her this cycle</div>${progressBar(plan?hp.rwf_to_hoza/plan*100:0,`RWF ${F(hp.rwf_to_hoza)} of RWF ${F(plan)} sent`,"good")}</div>`;
 }
 function renderPocket(){
  const idx=(B.family||[]).findIndex(x=>/collo pocket/i.test(x.label)),item=idx>=0?B.family[idx]:null;if(!item){q("pocket").innerHTML='<div class="empty">Pocket money is not in this plan.</div>';return}
@@ -371,7 +371,7 @@ function loanPlan(name){
 function liveLoan(x){const a=S&&S.dash&&S.dash.family_budget&&S.dash.family_budget.loans&&S.dash.family_budget.loans.all||[];return a.find(y=>y.name===x.name)||x}
 function renderLoans(){
  const L=B.loans||{},all=L.all||[],d=S&&S.dash&&S.dash.debt||{};
- q("loanTotals").innerHTML=`<div class="grid2"><div class="metric"><small>Still owed</small><b>${H(L.total_line||"Loading")}</b></div><div class="metric"><small>Paid this cycle</small><b class="good">KES ${F(d.paid_kes)}</b></div><div class="metric"><small>Reborrowed</small><b class="bad">KES ${F(d.reborrowed_kes)}</b></div><div class="metric"><small>Fuliza drawn</small><b class="bad">KES ${F(d.fuliza_drawn_kes)}</b></div></div>`;
+ q("loanTotals").innerHTML=`<div class="grid2"><div class="metric" style="grid-column:1/-1"><small>Still owed</small><b style="font-size:16px">${H(L.total_line||"Loading")}</b></div><div class="metric"><small>Paid this cycle</small><b class="good">KES ${F(d.paid_kes)}</b></div><div class="metric"><small>Reborrowed</small><b class="bad">KES ${F(d.reborrowed_kes)}</b></div><div class="metric"><small>Fuliza drawn</small><b class="bad">KES ${F(d.fuliza_drawn_kes)}</b></div></div>`;
  q("loans").innerHTML=all.map(x=>{const lv=liveLoan(x),cur=lv.current_live!=null?lv.current_live:x.current,orig=Number(x.original)||0,cleared=orig?Math.max(0,Math.min(100,(orig-Number(cur||0))/orig*100)):0,plan=loanPlan(x.name),noteTarget=plan&&String(plan.note||"").match(/reborrow\s*([\d,]+)/i),target=plan&&(Number(plan.borrowed)||Number((noteTarget&&noteTarget[1]||"").replace(/,/g,"")))||0,re=Number(lv.reborrowed_cycle)||0,left=Math.max(0,target-re);
   return `<div class="loan"><div class="loan-top"><div><b>${H(x.name)}</b><div class="meta">${H(x.ends||"")}</div></div><span class="money">${money(cur,x.cur)}</span></div>
    ${lv.paid_cycle?`<span class="chip">Paid ${money(lv.paid_cycle,x.cur)}</span>`:""}${re?`<span class="chip rose">Reborrowed ${money(re,x.cur)}</span>`:""}
@@ -429,7 +429,7 @@ function renderHomeSentences(){
   const hp=S&&S.dash&&S.dash.hoza_pipeline,plan=B.hoza_planned_rwf||0;
   const hz=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out"&&isHozaRow(x));let own=0,house=0,toName=0;
   hz.forEach(x=>{const c=correctionFor(x),a=Number(x.amount)||0;if(!c||!c.budget_label)toName+=a;else if(c.budget_section==="family")own+=a;else house+=a});
-  q("sHoza").innerHTML=hz.length?`Sent to Hoza this cycle: <b>RWF ${F(hz.reduce((n,x)=>n+(Number(x.amount)||0),0))}</b>.${own?` Her own and the children's money: RWF ${F(own)}.`:""}${house?` House items she paid: RWF ${F(house)}.`:""}${toName?` Still to name: RWF ${F(toName)}.`:""}`:"";
+  q("sHoza").innerHTML=hz.length?`Sent to Hoza this cycle: <b>RWF ${F(S.dash.hoza_total_rwf||hz.reduce((n,x)=>n+(Number(x.amount)||0),0))}</b>.${own?` Her own and the children's money: RWF ${F(own)}.`:""}${house?` House items she paid: RWF ${F(house)}.`:""}${toName?` Still to name: RWF ${F(toName)}.`:""}`:"";
   const u=unclearRows().length,btn=q("needName");btn.classList.toggle("hide",!u);btn.textContent=u?`${u} payment${u===1?"":"s"} need${u===1?"s":""} a name`:"";
  }catch(e){}
 }
