@@ -335,7 +335,7 @@ function renderJourney(){
  q("journey").innerHTML=(moves.length?moves:[]).map(x=>{const amount=Number(x.kes)||0;pool+=amount;return `<div class="move"><b>${H(simpleLabel(x.label))}</b><span class="money ${amount>=0?"good":""}">${amount>=0?"+":"−"}KES ${F(Math.abs(amount))}</span><div class="meta">KES ${F(Math.max(0,pool))} left after this step</div></div>`}).join("")+
   `<div class="panel"><b>${balanceText()}</b><div class="meta">No money disappears. Unused money stays visible until it gets another job.</div></div>`;
  const hp=S&&S.dash&&S.dash.hoza_pipeline,plan=B.hoza_planned_rwf||0;if(!hp){q("hoza").innerHTML="";return}
- q("hoza").innerHTML=`<div class="section-label">Money delivered through Hoza</div><div class="panel"><div class="row"><div><span>Sent to Eric Ayirwanda</span><div class="meta">Money agent for the KES to RWF exchange</div></div><span class="money">KES ${F(hp.kes_exchange_sent)}</span></div><div class="row"><span>Collo pocket money returned</span><span class="money">RWF ${F(hp.rwf_back_pocket)}</span></div><div class="row"><span>Delivered to Hoza</span><span class="money good">RWF ${F(hp.rwf_to_hoza)} of ${F(plan)}</span></div>${progressBar(plan?hp.rwf_to_hoza/plan*100:0,`RWF ${F(hp.rwf_to_hoza)} of RWF ${F(plan)} delivered`,"good")}</div>`;
+ q("hoza").innerHTML=`<div class="section-label">Money delivered through Hoza</div><div class="panel"><div class="row"><div><span>Sent to the exchange (Eric)</span><div class="meta">Shillings changed to francs; this is not Hoza's money</div></div><span class="money">KES ${F(hp.kes_exchange_sent)}</span></div><div class="row"><span>Collo pocket money returned</span><span class="money">RWF ${F(hp.rwf_back_pocket)}</span></div><div class="row"><span>Sent to Hoza (from the SMS)</span><span class="money good">RWF ${F(hp.rwf_to_hoza)} of ${F(plan)} planned through her</span></div>${progressBar(plan?hp.rwf_to_hoza/plan*100:0,`RWF ${F(hp.rwf_to_hoza)} of RWF ${F(plan)} sent`,"good")}</div>`;
 }
 function renderPocket(){
  const idx=(B.family||[]).findIndex(x=>/collo pocket/i.test(x.label)),item=idx>=0?B.family[idx]:null;if(!item){q("pocket").innerHTML='<div class="empty">Pocket money is not in this plan.</div>';return}
@@ -421,7 +421,7 @@ function renderHomeSentences(){
   const idx=(B.family||[]).findIndex(x=>/collo pocket/i.test(x.label));
   if(idx>=0){const x=usedInfo("family",B.family[idx]);q("sMoney").innerHTML=`Money left to spend: <b>RWF ${F(x.balance)}</b> (pocket money, RWF ${F(x.spent)} used so far).`}else q("sMoney").textContent="";
   const hp=S&&S.dash&&S.dash.hoza_pipeline,plan=B.hoza_planned_rwf||0;
-  q("sHoza").innerHTML=hp?`Hoza has received <b>RWF ${F(hp.rwf_to_hoza)}</b> of RWF ${F(plan)} this cycle.`:"";
+  const herOwn=(B.family||[]).filter(i=>i.via==="hoza"&&!i.unplanned).reduce((n,i)=>n+(Number(i.rwf)||0),0);q("sHoza").innerHTML=hp?`Sent to Hoza this cycle: <b>RWF ${F(hp.rwf_to_hoza)}</b>. Her own and the children's money in the plan is RWF ${F(herOwn)}; the rest covers house items she pays.`:"";
   const u=unclearRows().length,btn=q("needName");btn.classList.toggle("hide",!u);btn.textContent=u?`${u} payment${u===1?"":"s"} need${u===1?"s":""} a name`:"";
  }catch(e){}
 }
