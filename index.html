@@ -198,6 +198,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px 4px}
 <h2 style="font-size:20px;font-weight:700;margin:8px 0 0;color:var(--ink)">Enter the family code</h2>
 <input type="text" id="gateIn" placeholder="Family code" autocapitalize="characters" autocorrect="off" autocomplete="off" onkeydown="if(event.key==='Enter')submitGate()">
 <div class="hide" id="gateErr" style="color:var(--red);font-size:13px;margin-top:10px">That code did not work.</div>
+<div class="meta" style="margin-top:14px">Who is using this phone?</div><div style="display:flex;gap:8px;margin-top:6px"><button id="whoCollo" style="flex:1" onclick="pickWho('Collo')">Collo</button><button id="whoHoza" style="flex:1" onclick="pickWho('Hoza')">Hoza</button></div>
 <button class="primary" style="width:100%;margin-top:14px" onclick="submitGate()">Open</button>
 <div class="meta" style="margin-top:14px">Saved on this phone. You only type it once.</div></div></div>
 <footer id="footer"></footer>
@@ -231,9 +232,11 @@ function runner(){let ok=null,fail=null;const o={withSuccessHandler(f){ok=f;retu
  apiSaveBudget(b,w){apiPost('saveplan',{budget:b,editor:w}).then(x=>ok&&ok(x)).catch(e=>fail&&fail(e))},
  apiSaveTransactionCorrection(c,w){apiPost('savecorrection',{correction:c,editor:w}).then(x=>ok&&ok(x)).catch(e=>fail&&fail(e))}};return o}
 window.google={script:{}};Object.defineProperty(window.google.script,'run',{get(){return runner()}});
-function showGate(bad){document.getElementById('gate').classList.remove('hide');if(bad){CODE='';localStorage.removeItem('budgetcode');document.getElementById('gateErr').classList.remove('hide')}setTimeout(()=>{try{document.getElementById('gateIn').focus()}catch(e){}},60)}
-async function submitGate(){const v=document.getElementById('gateIn').value.trim();if(!v)return;CODE=v;try{const o=await apiGet('state=1');if(!o||o.error){CODE='';document.getElementById('gateErr').classList.remove('hide');return}localStorage.setItem('budgetcode',v);document.getElementById('gate').classList.add('hide');S=o;C=o.corrections||C;if(!dirty)B=o.budget||o.dash&&o.dash.family_budget;render()}catch(e){CODE='';document.getElementById('gateErr').textContent='No connection. Try again.';document.getElementById('gateErr').classList.remove('hide')}}
-function who(){let w=URL_WHO||localStorage.getItem("who");if(!w){w=confirm("Press OK for Collo, Cancel for Hoza")?"Collo":"Hoza";localStorage.setItem("who",w)}return w}
+function pickWho(w){localStorage.setItem('who',w);['Collo','Hoza'].forEach(x=>{const b=document.getElementById('who'+x);if(b)b.style.borderColor=x===w?'var(--rose)':'var(--line)'})}
+function showGate(bad){pickWho(localStorage.getItem('who')||'Collo');document.getElementById('gate').classList.remove('hide');if(bad){CODE='';localStorage.removeItem('budgetcode');document.getElementById('gateErr').classList.remove('hide')}setTimeout(()=>{try{document.getElementById('gateIn').focus()}catch(e){}},60)}
+async function submitGate(){const v=document.getElementById('gateIn').value.trim().toUpperCase();if(!v)return;CODE=v;try{const o=await apiGet('state=1');if(!o||o.error){CODE='';document.getElementById('gateErr').classList.remove('hide');return}localStorage.setItem('budgetcode',v);document.getElementById('gate').classList.add('hide');S=o;C=o.corrections||C;if(!dirty)B=o.budget||o.dash&&o.dash.family_budget;render()}catch(e){CODE='';document.getElementById('gateErr').textContent='No connection. Try again.';document.getElementById('gateErr').classList.remove('hide')}}
+function who(){let w=URL_WHO||localStorage.getItem("who")||"Collo";return w}
+function setWho(w){localStorage.setItem("who",w);render()}
 function fx(){return (B&&B.fx)||{usd_kes:128.5,kes_rwf:11.2}}
 function money(n,c){return c==="USD"?"$"+D(n):(c==="RWF"?"RWF ":"KES ")+F(n)}
 function markDirty(){dirty=true;q("savebar").style.display="flex"}
@@ -439,7 +442,7 @@ function render(){
  if(!B)return;q("notice").style.display="block";q("notice").textContent=B.status_line||"This cycle: the salary USD account keeps the land loan and subscriptions. The rest became shillings. Use the tabs at the bottom to move around.";
  renderOverview();renderJourney();renderBudget();renderPocket();renderLoans();renderSpending();renderMore();
  renderHomeSummaries();
- const m=B.meta||{};q("footer").textContent=`${who()} is using this phone · last saved by ${m.last_edited_by||"family"} ${m.last_edited_at||""}`;
+ const m=B.meta||{};q("footer").innerHTML=`${H(who())} is using this phone · <a href="#" style="color:var(--rose)" onclick="setWho(who()==='Collo'?'Hoza':'Collo');return false">not you? tap to switch</a><br>last saved by ${H(m.last_edited_by||"family")} ${H(m.last_edited_at||"")}`;
 }
 q("fxUK").addEventListener("input",()=>{if(!B)return;B.fx.usd_kes=Number(q("fxUK").value)||128.5;markDirty();renderJourney()});
 q("fxKR").addEventListener("input",()=>{if(!B)return;B.fx.kes_rwf=Number(q("fxKR").value)||11.2;markDirty();renderJourney()});
