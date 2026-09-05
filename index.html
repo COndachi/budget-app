@@ -383,14 +383,14 @@ function renderSpending(){
  q("analyst").innerHTML=`<div class="analyst-icon">🔎</div><div><b>${unclear.length?`${unclear.length} payment${unclear.length===1?"":"s"} need a name`:"Everything recent has a name"}</b><div class="meta">${unclear.length?"Tap the word that fits. Use More if you want to pick a budget item or add a new one.":"The analyst checks every hour and this list fills itself."}</div></div>`;
  const ordered=unclear.concat(rows.filter(r=>!unclear.includes(r)));
  q("spending").innerHTML=ordered.slice(0,30).map(r=>{const c=correctionFor(r),tok=encodeURIComponent(r.tx_key),open=txOpen===tok,t=c&&c.treatment||r.treatment||"spend",needs=unclear.includes(r);
-  const quick=needs&&!open?`<div class="quick">${QUICK.map(([lbl,cat,tr])=>`<button onclick="quickTx('${tok}','${H(cat)}','${tr}')">${lbl}</button>`).join("")}<button class="more" onclick="txOpen='${tok}';renderSpending()">More…</button></div>`:"";
+  const quick=needs&&!open?`<div class="quick">${(isHozaRow(r)?hozaChoices().map(([sec,lbl])=>`<button onclick="quickTx('${tok}','${H(displayLabel(lbl))}','spend','${sec}','${H(lbl).replace(/'/g,"&#39;")}')">${H(displayLabel(lbl))}</button>`):QUICK.map(([lbl,cat,tr])=>`<button onclick="quickTx('${tok}','${H(cat)}','${tr}')">${lbl}</button>`)).join("")}<button class="more" onclick="txOpen='${tok}';renderSpending()">More…</button></div>`:"";
   return `<div class="tx ${H(t)} ${open?"open":""}"><div class="tx-top"><div><b>${H(c&&c.recipient_label||r.who||"Unknown")}</b><div class="meta">${H(c&&c.category||r.cat||"No name yet")} · ${H((r.ts||"").slice(5,16))}</div></div><span class="money bad">−${money(r.amount,r.currency)}</span></div>${quick}
    ${needs&&!open?"":`<button class="used-btn" onclick="txOpen=txOpen==='${tok}'?null:'${tok}';renderSpending()">${c?"Change the name":(open?"Hide":"Give it a name")}</button>`}
    <div class="txedit"><label>Who or where?</label><input id="txWho" value="${H(c&&c.recipient_label||r.who||"")}"><label>What was it for?</label><input id="txCat" value="${H(c&&c.category||r.cat||"")}"><label>How should it count?</label><select id="txTreatment"><option value="spend"${t==="spend"?" selected":""}>Spending or payment</option><option value="reserve"${t==="reserve"?" selected":""}>Reserved money</option><option value="internal"${t==="internal"?" selected":""}>Between my accounts</option><option value="reimbursable"${t==="reimbursable"?" selected":""}>Refund expected</option></select><label>Which budget item?</label><select id="txBudget" onchange="q('txNew').classList.toggle('on',this.value==='__new__')">${budgetOptions(c&&c.budget_section||r.budget_section,c&&c.budget_label||r.budget_label)}<option value="__new__">＋ Add a new item…</option></select><div class="newitem" id="txNew"><input id="txNewName" placeholder="Name of the new item"><select id="txNewSec"><option value="home">The house</option><option value="family">Family money</option><option value="architect">House project</option></select></div><button class="primary" style="margin-top:9px" onclick="saveTx('${tok}')">Save</button></div></div>`}).join("")||'<div class="empty">No spending messages yet.</div>';
 }
-function quickTx(token,cat,treatment){
+function quickTx(token,cat,treatment,sec,label){
  const key=decodeURIComponent(token),r=(S.dash.recent||[]).find(x=>x.tx_key===key);if(!r)return;
- const cor={tx_key:key,cycle:S.dash.cycle,timestamp:r.ts,amount:r.amount,currency:r.currency,recipient:r.who,recipient_label:r.who||"",category:cat,treatment:treatment,budget_section:"",budget_label:"",note:"One-tap answer in Ondachi Budget"};
+ const cor={tx_key:key,cycle:S.dash.cycle,timestamp:r.ts,amount:r.amount,currency:r.currency,recipient:r.who,recipient_label:r.who||"",category:cat,treatment:treatment,budget_section:sec||"",budget_label:label||"",count_as_hoza:isHozaRow(r),note:"One-tap answer in Ondachi Budget"};
  google.script.run.withSuccessHandler(o=>{if(o&&o.ok){C=o.corrections;render()}else alert(o&&o.error||"Could not save")}).withFailureHandler(e=>alert(e)).apiSaveTransactionCorrection(cor,who())
 }
 function saveTx(token){
@@ -412,7 +412,9 @@ function renderMore(){
 }
 const TAB_TITLES={home:"Ondachi Budget",plan:"The plan",pocket:"Pocket money",loans:"Loans",messages:"Money messages"};
 function setTab(name){["home","plan","pocket","loans","messages"].forEach(t=>{q("tab-"+t).classList.toggle("on",t===name);q("nav-"+t).classList.toggle("on",t===name)});q("tabTitle").textContent=TAB_TITLES[name]||"Ondachi Budget";try{localStorage.setItem("budgetTab",name)}catch(e){}window.scrollTo({top:0})}
-function unclearRows(){const rows=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out");return rows.filter(x=>!correctionFor(x)&&(/unknown|uncategor/i.test((x.who||"")+" "+(x.cat||""))||!x.cat))}
+function isHozaRow(x){return /hoza|umuhoza|jeanne/i.test(x.who||"")}
+function unclearRows(){const rows=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out");return rows.filter(x=>!correctionFor(x)&&(isHozaRow(x)||/unknown|uncategor/i.test((x.who||"")+" "+(x.cat||""))||!x.cat))}
+function hozaChoices(){const out=[];["family","home"].forEach(sec=>(B[sec]||[]).forEach(i=>{if(i.via==="hoza"&&!i.unplanned)out.push([sec,i.label])}));return out}
 function renderHomeSentences(){
  try{
   const home=(B.home||[]),open=home.filter(it=>!it.available&&!it.unplanned&&!usedInfo("home",it).paid);
@@ -421,7 +423,9 @@ function renderHomeSentences(){
   const idx=(B.family||[]).findIndex(x=>/collo pocket/i.test(x.label));
   if(idx>=0){const x=usedInfo("family",B.family[idx]);q("sMoney").innerHTML=`Money left to spend: <b>RWF ${F(x.balance)}</b> (pocket money, RWF ${F(x.spent)} used so far).`}else q("sMoney").textContent="";
   const hp=S&&S.dash&&S.dash.hoza_pipeline,plan=B.hoza_planned_rwf||0;
-  const herOwn=(B.family||[]).filter(i=>i.via==="hoza"&&!i.unplanned).reduce((n,i)=>n+(Number(i.rwf)||0),0);q("sHoza").innerHTML=hp?`Sent to Hoza this cycle: <b>RWF ${F(hp.rwf_to_hoza)}</b>. Her own and the children's money in the plan is RWF ${F(herOwn)}; the rest covers house items she pays.`:"";
+  const hz=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out"&&isHozaRow(x));let own=0,house=0,toName=0;
+  hz.forEach(x=>{const c=correctionFor(x),a=Number(x.amount)||0;if(!c||!c.budget_label)toName+=a;else if(c.budget_section==="family")own+=a;else house+=a});
+  q("sHoza").innerHTML=hz.length?`Sent to Hoza this cycle: <b>RWF ${F(hz.reduce((n,x)=>n+(Number(x.amount)||0),0))}</b>.${own?` Her own and the children's money: RWF ${F(own)}.`:""}${house?` House items she paid: RWF ${F(house)}.`:""}${toName?` Still to name: RWF ${F(toName)}.`:""}`:"";
   const u=unclearRows().length,btn=q("needName");btn.classList.toggle("hide",!u);btn.textContent=u?`${u} payment${u===1?"":"s"} need${u===1?"s":""} a name`:"";
  }catch(e){}
 }
