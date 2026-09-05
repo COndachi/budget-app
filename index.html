@@ -440,7 +440,7 @@ function renderHomeSummaries(){ renderHomeSentences();
  try{q("sumSms").textContent=q("smsSummary").textContent;}catch(e){}
 }
 function render(){
- if(!B)return;q("notice").style.display="block";q("notice").textContent=B.status_line||"This cycle: the salary USD account keeps the land loan and subscriptions. The rest became shillings. Use the tabs at the bottom to move around.";
+ if(!B)return;if(B.status_line){q("notice").style.display="block";q("notice").textContent=B.status_line}else{q("notice").style.display="none"}q("notice").textContent=B.status_line||"This cycle: the salary USD account keeps the land loan and subscriptions. The rest became shillings. Use the tabs at the bottom to move around.";
  renderOverview();renderJourney();renderBudget();renderPocket();renderLoans();renderSpending();renderMore();
  renderHomeSummaries();
  const m=B.meta||{};q("footer").innerHTML=`${H(who())} is using this phone · <a href="#" style="color:var(--rose)" onclick="setWho(who()==='Collo'?'Hoza':'Collo');return false">not you? tap to switch</a><br>last saved by ${H(m.last_edited_by||"family")} ${H(m.last_edited_at||"")}`;
