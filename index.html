@@ -422,7 +422,7 @@ function setTab(name){["home","plan","pocket","loans","messages"].forEach(t=>{q(
 function wallet(cur){const b=(S&&S.dash&&S.dash.balances||[]).filter(x=>x.currency===cur);return b.length?b[0]:null}
 function cycleStart(){const c=String(S&&S.dash&&S.dash.cycle||"");const m=c.match(/^(\d{4})-(\d{2})$/);if(!m)return "";const d=new Date(Number(m[1]),Number(m[2])-2,24);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-24"}
 function fuelThisCycle(){const st=cycleStart();let t=0;Object.values(C&&C.items||{}).forEach(r=>{if(/fuel/i.test(r.category||"")&&r.currency==="RWF"&&String(r.timestamp||"")>=st)t+=Number(r.amount)||0});return t}
-function whenText(a){return a?String(a).slice(5,16).replace("-"," ").replace(/^0/,""):""}
+function whenText(a){const m=String(a||"").match(/^\d{4}-(\d{2})-(\d{2})[ T](\d{2}:\d{2})/);if(!m)return String(a||"");const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][Number(m[1])-1];return Number(m[2])+" "+M+" "+m[3]}
 function isHozaRow(x){return /hoza|umuhoza|jeanne/i.test(x.who||"")}
 function unclearRows(){const rows=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out");return rows.filter(x=>!correctionFor(x)&&(isHozaRow(x)||/unknown|uncategor/i.test((x.who||"")+" "+(x.cat||""))||!x.cat))}
 function hozaChoices(){const out=[];["family","home"].forEach(sec=>(B[sec]||[]).forEach(i=>{if(i.via==="hoza"&&!i.unplanned)out.push([sec,i.label])}));return out}
