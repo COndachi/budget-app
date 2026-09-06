@@ -115,7 +115,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px 4px}
   <div class="eyebrow">Money received this salary cycle</div><div class="hero-number" id="salary">$0</div>
   <div class="hero-grid">
    <div class="hero-stat"><small>Household used</small><b id="heroUsed">RWF 0</b></div>
-   <div class="hero-stat"><small>Available to use</small><b id="heroAvailable">RWF 0</b></div>
+   <div class="hero-stat"><small>In M-Money now</small><b id="heroAvailable">RWF 0</b></div>
    <div class="hero-stat"><small>Hybrid charge fund</small><b id="heroEv">RWF 0</b></div>
   </div>
  </div>
@@ -310,7 +310,7 @@ function renderBudget(){
  const evBalance=Math.max(0,n.sweep-evUsed),charges=Math.floor(evBalance/7500),after=evBalance-charges*7500;
  q("evFund").innerHTML=`<div class="sweep-head"><div><div class="eyebrow">Plug-in hybrid charging fund</div><div class="meta">${sources.length?H(sources.join(" · ")):"No small balances moved yet"}${evUsed?` · RWF ${F(evUsed)} used for charging`:""}</div></div><div class="money good">RWF ${F(evBalance)}</div></div>
   <div class="charge-dots">${[0,1,2,3].map(i=>`<i class="${i<charges?"on":""}"></i>`).join("")}</div><div class="meta">${charges} full charge${charges===1?"":"s"} at about RWF 7,500${n.sweep?` · RWF ${F(after)} stays in this fund`:""}</div>`;
- q("heroUsed").textContent="RWF "+F(n.used);q("heroAvailable").textContent="RWF "+F(n.available);q("heroEv").textContent="RWF "+F(evBalance);
+ q("heroUsed").textContent="RWF "+F(n.used);const hw=wallet("RWF");q("heroAvailable").textContent="RWF "+F(hw?hw.amount:n.available);q("heroEv").textContent="RWF "+F(evBalance);
 }
 function parentKpi(label){return (S&&S.dash&&S.dash.parent_plan&&S.dash.parent_plan.kpis||[]).find(x=>(x.label||"").toLowerCase().includes(label))}
 function renderOverview(){
@@ -357,8 +357,8 @@ function renderPocket(){
  const tx=recentTx.concat(olderTx).sort((a,b)=>String(a.ts||"").localeCompare(String(b.ts||"")));
  const open=actualEdit&&actualEdit.sec==="family"&&actualEdit.idx===idx;
  const pct=item.rwf?Math.min(100,x.spent/item.rwf*100):0;
- q("pocket").innerHTML=`<div class="grid2"><div class="metric"><small>Original pocket allocation</small><b>RWF ${F(original)}</b></div><div class="metric"><small>Moved to fuel</small><b class="gold">RWF ${F(movedToFuel)}</b></div><div class="metric"><small>Spent from pocket</small><b class="bad">RWF ${F(x.spent)}</b></div><div class="metric"><small>Still in my pocket</small><b class="good">RWF ${F(x.balance)}</b></div></div>
-  ${progressBar(pct,`RWF ${F(x.spent)} of RWF ${F(item.rwf)} spent`)}<div class="meta">The saved trail starts at RWF ${F(original)}. After RWF ${F(movedToFuel)} moved to fuel, RWF ${F(item.rwf)} remained as the spendable pocket budget.</div><button class="used-btn" onclick="openActual('family',${idx})">Correct the total used</button>
+ q("pocket").innerHTML=`<div class="grid2"><div class="metric"><small>Pocket allowance (plan)</small><b>RWF ${F(item.rwf)}</b></div><div class="metric"><small>Fuel this cycle</small><b class="gold">RWF ${F(fuelThisCycle())}</b></div><div class="metric"><small>Named as pocket spending</small><b class="bad">RWF ${F(x.spent)}</b></div><div class="metric"><small>In M-Money now</small><b class="good">RWF ${F((wallet("RWF")||{}).amount||0)}</b></div></div>
+  ${progressBar(pct,`RWF ${F(x.spent)} of RWF ${F(item.rwf)} spent`)}<div class="meta">The allowance is a plan figure. The M-Money figure is the balance in the latest SMS${wallet("RWF")?" ("+H(whenText(wallet("RWF").as_of))+")":""}. Name payments in Messages to see where the allowance went.</div><button class="used-btn" onclick="openActual('family',${idx})">Correct the total used</button>
   ${open?`<div class="inline-edit"><input id="pocketActualInput" type="number" inputmode="numeric" value="${x.spent||0}"><button class="primary" onclick="setPocketActual(${idx})">Use this total</button></div>`:""}
   <div class="section-label">Pocket money trail</div>
   <div class="row"><div><b>Original pocket allocation</b><div class="meta">Start of this salary cycle</div></div><span class="money good">+RWF ${F(original)}</span></div>
@@ -419,6 +419,10 @@ function renderMore(){
 }
 const TAB_TITLES={home:"Ondachi Budget",plan:"The plan",pocket:"Pocket money",loans:"Loans",messages:"Money messages"};
 function setTab(name){["home","plan","pocket","loans","messages"].forEach(t=>{q("tab-"+t).classList.toggle("on",t===name);q("nav-"+t).classList.toggle("on",t===name)});q("tabTitle").textContent=TAB_TITLES[name]||"Ondachi Budget";try{localStorage.setItem("budgetTab",name)}catch(e){}window.scrollTo({top:0})}
+function wallet(cur){const b=(S&&S.dash&&S.dash.balances||[]).filter(x=>x.currency===cur);return b.length?b[0]:null}
+function cycleStart(){const c=String(S&&S.dash&&S.dash.cycle||"");const m=c.match(/^(\d{4})-(\d{2})$/);if(!m)return "";const d=new Date(Number(m[1]),Number(m[2])-2,24);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-24"}
+function fuelThisCycle(){const st=cycleStart();let t=0;Object.values(C&&C.items||{}).forEach(r=>{if(/fuel/i.test(r.category||"")&&r.currency==="RWF"&&String(r.timestamp||"")>=st)t+=Number(r.amount)||0});return t}
+function whenText(a){return a?String(a).slice(5,16).replace("-"," ").replace(/^0/,""):""}
 function isHozaRow(x){return /hoza|umuhoza|jeanne/i.test(x.who||"")}
 function unclearRows(){const rows=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out");return rows.filter(x=>!correctionFor(x)&&(isHozaRow(x)||/unknown|uncategor/i.test((x.who||"")+" "+(x.cat||""))||!x.cat))}
 function hozaChoices(){const out=[];["family","home"].forEach(sec=>(B[sec]||[]).forEach(i=>{if(i.via==="hoza"&&!i.unplanned)out.push([sec,i.label])}));return out}
@@ -428,7 +432,7 @@ function renderHomeSentences(){
   const sb=q("sBills");sb.className="sentence "+(open.length?"warn":"ok");
   sb.innerHTML=open.length?`<b>${open.length} house payment${open.length===1?" is":"s are"} still open:</b> ${H(open.map(i=>displayLabel(i.label)).join(", "))}.`:`<b>All ${home.filter(i=>!i.unplanned).length} house payments are done.</b>`;
   const idx=(B.family||[]).findIndex(x=>/collo pocket/i.test(x.label));
-  if(idx>=0){const x=usedInfo("family",B.family[idx]);q("sMoney").innerHTML=`Money left to spend: <b>RWF ${F(x.balance)}</b> (pocket money, RWF ${F(x.spent)} used so far).`}else q("sMoney").textContent="";
+  const w=wallet("RWF"),k=wallet("KES");let sm=w?`In M-Money now: <b>RWF ${F(w.amount)}</b> (from the SMS of ${H(whenText(w.as_of))}).`:"";if(k)sm+=` M-PESA: KES ${F(k.amount)}.`;if(idx>=0){const x=usedInfo("family",B.family[idx]);sm+=` Pocket allowance in the plan: RWF ${F(B.family[idx].rwf)}, of which RWF ${F(x.spent)} is named as pocket spending so far.`}q("sMoney").innerHTML=sm;
   const hp=S&&S.dash&&S.dash.hoza_pipeline,plan=B.hoza_planned_rwf||0;
   const hz=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out"&&isHozaRow(x));let own=0,house=0,toName=0;
   hz.forEach(x=>{const c=correctionFor(x),a=Number(x.amount)||0;if(!c||!c.budget_label)toName+=a;else if(c.budget_section==="family")own+=a;else house+=a});
