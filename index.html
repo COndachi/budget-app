@@ -259,15 +259,34 @@ function markDirty(){dirty=true;q("savebar").style.display="flex"}
 function toggleEdit(){editing=!editing;document.body.classList.toggle("edit",editing);q("editBtn").textContent=editing?"Finish editing":"Edit plan";render()}
 function budgetActual(sec,label){const a=S&&S.dash&&S.dash.budget_actuals||[];return a.find(x=>x.section===sec&&x.label===label)||{}}
 function dashItemPaid(sec,label){const a=S&&S.dash&&S.dash.family_budget&&S.dash.family_budget[sec]||[];const x=a.find(v=>v.label===label);return !!(x&&x.paid)}
+/* Lines Hoza pays are discharged when the money reaches her (Collo, 18 Oct 2026).
+   He sends one lump sum covering everything she handles, so once that sum covers
+   what the plan routes through her, those lines are no longer his to pay and
+   should not sit in the open list. Counted from the plan's own via=hoza lines
+   rather than the stored hoza_planned_rwf, which can go stale: on 18 Oct the
+   stored field read 1,473,042 against 1,475,275 actually on the lines.
+   This says the money was SENT, which is not the same as Hoza having paid the
+   bill. Where the SMS proves the bill itself was settled, dashItemPaid already
+   says so, and that is the stronger signal, so the wording below prefers it. */
+function hozaCovered(){
+ if(!B)return false;
+ const sent=Number(S&&S.dash&&S.dash.hoza_total_rwf)||0;
+ if(sent<=0)return false;
+ let planned=0;
+ ["home","family"].forEach(s=>(B[s]||[]).forEach(i=>{if(i.via==="hoza")planned+=Number(i.rwf)||0}));
+ return planned>0&&sent>=planned;
+}
 function usedInfo(sec,item){
  const x=budgetActual(sec,item.label),sms=Number(x.spent_rwf)||0,manual=Number(item.manual_actual_rwf)||0;
  const spent=Math.max(sms,manual),reserved=Number(x.reserved_rwf)||0,refund=Number(x.reimbursable_rwf)||0;
- const paid=!!item.paid||dashItemPaid(sec,item.label);
+ const confirmed=!!item.paid||dashItemPaid(sec,item.label);
+ const hozaSent=!confirmed&&item.via==="hoza"&&!item.available&&hozaCovered();
+ const paid=confirmed||hozaSent;
  const evidenced=spent+reserved+refund;
  const used=item.available?0:(evidenced||((paid&&!item.unplanned)?Number(item.rwf)||0:0));
  const balance=Math.max(0,(Number(item.rwf)||0)-used);
  const sweep=(!item.available&&paid&&spent>0&&balance>0&&item.rwf>0&&balance/item.rwf<.05)?balance:0;
- return {sms,manual,spent,reserved,refund,paid,used,balance,sweep};
+ return {sms,manual,spent,reserved,refund,paid,used,balance,sweep,hozaSent};
 }
 function budgetNumbers(){
  let planned=0,used=0,sweep=0,availableLines=0;
@@ -286,7 +305,7 @@ function removeItem(sec,idx){if(pendingDelete===sec+"|"+idx){B[sec].splice(idx,1
 function addItem(sec){const a=q(sec==="home"?"addHomeName":"addFamilyName"),b=q(sec==="home"?"addHomeAmt":"addFamilyAmt"),n=Number(b.value);if(!a.value.trim()||!Number.isFinite(n)||n<=0)return;(B[sec]||=[]).push({label:a.value.trim(),rwf:n,unplanned:true});a.value="";b.value="";markDirty();render()}
 function actualDetail(x,item){
  const bits=[],tracked=x.spent+x.reserved+x.refund;if(x.spent)bits.push(`Used RWF ${F(x.spent)}`);if(x.reserved)bits.push(`Reserved RWF ${F(x.reserved)}`);if(x.refund)bits.push(`Refund expected RWF ${F(x.refund)}`);
- if(x.sweep)bits.push(`RWF ${F(x.sweep)} moved to hybrid charging`);else if(!item.available&&tracked)bits.push(`RWF ${F(x.balance)} left`);else if(x.paid)bits.push("Marked paid; counted in full");
+ if(x.sweep)bits.push(`RWF ${F(x.sweep)} moved to hybrid charging`);else if(!item.available&&tracked)bits.push(`RWF ${F(x.balance)} left`);else if(x.hozaSent)bits.push("Money sent to Hoza; counted in full");else if(x.paid)bits.push("Marked paid; counted in full");
  return bits.join(" · ");
 }
 function displayLabel(label){
@@ -298,7 +317,7 @@ function displayLabel(label){
 function budgetRow(sec,item,idx){
  const x=usedInfo(sec,item),isActual=actualEdit&&actualEdit.sec===sec&&actualEdit.idx===idx,isPlan=planEdit&&planEdit.sec===sec&&planEdit.idx===idx;
  const limit=Number(item.rwf)||0,tracked=x.spent+x.reserved+x.refund,itemPct=limit?Math.min(100,x.used/limit*100):0;
- const barText=tracked?`RWF ${F(tracked)} of RWF ${F(limit)} used`:(x.paid?`Marked paid · RWF ${F(limit)} counted as used`:`No spending recorded yet · RWF ${F(limit)} budget`);
+ const barText=tracked?`RWF ${F(tracked)} of RWF ${F(limit)} used`:(x.hozaSent?`Sent to Hoza · RWF ${F(limit)} counted as used`:(x.paid?`Marked paid · RWF ${F(limit)} counted as used`:`No spending recorded yet · RWF ${F(limit)} budget`));
  const remainingPct=Math.max(0,100-Math.max(0,Math.min(100,itemPct)));
  if(item.available)return `<div class="row"><div class="row-main"><div class="row-title">Available to assign</div><div class="meta">Funded money waiting for its next job</div></div><div class="amount money good">RWF ${F(item.rwf)}</div></div>`;
  return `<div class="row"><div class="row-main"><div class="row-title"><button class="tick ${x.paid?"on":""}" onclick="togglePaid('${sec}',${idx})">${x.paid?"✓":""}</button>${H(displayLabel(item.label))}</div>
