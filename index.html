@@ -274,7 +274,7 @@ function removeItem(sec,idx){if(pendingDelete===sec+"|"+idx){B[sec].splice(idx,1
 function addItem(sec){const a=q(sec==="home"?"addHomeName":"addFamilyName"),b=q(sec==="home"?"addHomeAmt":"addFamilyAmt"),n=Number(b.value);if(!a.value.trim()||!Number.isFinite(n)||n<=0)return;(B[sec]||=[]).push({label:a.value.trim(),rwf:n,unplanned:true});a.value="";b.value="";markDirty();render()}
 function actualDetail(x,item){
  const bits=[],tracked=x.spent+x.reserved+x.refund;if(x.spent)bits.push(`Used RWF ${F(x.spent)}`);if(x.reserved)bits.push(`Reserved RWF ${F(x.reserved)}`);if(x.refund)bits.push(`Refund expected RWF ${F(x.refund)}`);
- if(x.sweep)bits.push(`RWF ${F(x.sweep)} moved to hybrid charging`);else if(!item.available&&tracked)bits.push(`RWF ${F(x.balance)} left`);else if(x.paid)bits.push("Marked paid; total used not entered");
+ if(x.sweep)bits.push(`RWF ${F(x.sweep)} moved to hybrid charging`);else if(!item.available&&tracked)bits.push(`RWF ${F(x.balance)} left`);else if(x.paid)bits.push("Marked paid; counted in full");
  return bits.join(" · ");
 }
 function displayLabel(label){
@@ -285,8 +285,8 @@ function displayLabel(label){
 }
 function budgetRow(sec,item,idx){
  const x=usedInfo(sec,item),isActual=actualEdit&&actualEdit.sec===sec&&actualEdit.idx===idx,isPlan=planEdit&&planEdit.sec===sec&&planEdit.idx===idx;
- const limit=Number(item.rwf)||0,tracked=x.spent+x.reserved+x.refund,itemPct=limit?tracked/limit*100:0;
- const barText=tracked?`RWF ${F(tracked)} of RWF ${F(limit)} used`:(x.paid?"Marked paid; enter the total used to fill this bar":`No spending recorded yet · RWF ${F(limit)} budget`);
+ const limit=Number(item.rwf)||0,tracked=x.spent+x.reserved+x.refund,itemPct=limit?Math.min(100,x.used/limit*100):0;
+ const barText=tracked?`RWF ${F(tracked)} of RWF ${F(limit)} used`:(x.paid?`Marked paid · RWF ${F(limit)} counted as used`:`No spending recorded yet · RWF ${F(limit)} budget`);
  const remainingPct=Math.max(0,100-Math.max(0,Math.min(100,itemPct)));
  if(item.available)return `<div class="row"><div class="row-main"><div class="row-title">Available to assign</div><div class="meta">Funded money waiting for its next job</div></div><div class="amount money good">RWF ${F(item.rwf)}</div></div>`;
  return `<div class="row"><div class="row-main"><div class="row-title"><button class="tick ${x.paid?"on":""}" onclick="togglePaid('${sec}',${idx})">${x.paid?"✓":""}</button>${H(displayLabel(item.label))}</div>
@@ -313,8 +313,13 @@ function renderBudget(){
  q("heroUsed").textContent="RWF "+F(n.used);const hw=wallet("RWF");q("heroAvailable").textContent="RWF "+F(hw?hw.amount:n.available);q("heroEv").textContent="RWF "+F(evBalance);
 }
 function parentKpi(label){return (S&&S.dash&&S.dash.parent_plan&&S.dash.parent_plan.kpis||[]).find(x=>(x.label||"").toLowerCase().includes(label))}
+function salaryFallback(){
+ const f=((B&&B.flow)||[]).find(x=>x.usd_in!=null);if(f)return money(f.usd_in,"USD");
+ const m=((S&&S.dash&&S.dash.money_in)||[]).find(x=>x.salary);if(m)return money(m.amount,m.currency);
+ return "Not recorded yet";
+}
 function renderOverview(){
- const sal=parentKpi("salary"),conv=parentKpi("convert"),r=fx(),salary=sal?sal.value:"$6,454.21";
+ const sal=parentKpi("salary"),conv=parentKpi("convert"),r=fx(),salary=sal?sal.value:salaryFallback();
  q("salary").textContent=salary;q("cycle").textContent=B.window||B.cycle||"Current salary cycle";
  q("overview").innerHTML=`<div class="panel"><div class="panel-title">Salary received</div><div class="row"><span>${H(sal&&sal.label||"Salary")}</span><span class="money good">${H(salary)}</span></div>
   ${sal&&sal.sub?`<div class="meta">${H(sal.sub)}</div>`:""}${conv?`<div class="row"><div><b>${H(conv.label)}</b><div class="meta">${H(conv.sub)}</div></div><span class="good">${H(conv.value)}</span></div>`:""}
