@@ -101,16 +101,27 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px 4px}
 .home-list .go{background:var(--rose-soft);color:var(--rose);border:0;border-radius:999px;padding:9px 14px;font-size:13px;font-weight:700;min-height:0;white-space:nowrap}
 @media(max-width:380px){body{padding-left:10px;padding-right:10px}.hero-grid{grid-template-columns:1fr 1fr}.hero-stat:last-child{grid-column:1/-1}.hero-number{font-size:28px}.metric b{font-size:18px;overflow-wrap:anywhere}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* salary cycle picker in the header (18 Oct 2026) */
+.cyclepick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.cyclepick select{padding:5px 26px 5px 9px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.07);color:var(--ink);font:inherit;font-size:12px;font-weight:600;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 14px) calc(50% + 1px),calc(100% - 9px) calc(50% + 1px);background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.cyclenote{color:var(--muted);font-size:11px}
+.pastwrap{display:none}.pastwrap.on{display:block}
+body.pastmode #tab-home>.hero,body.pastmode #tab-home>.notice,body.pastmode #tab-home>.section{display:none}
+body.pastmode #editBtn{display:none}
+.pastwrap .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:380px){.pastwrap .cols{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="tabtitle">
- <div><h1 id="tabTitle">Home</h1><p><span id="cycle">Loading this month...</span></p></div>
+ <div><h1 id="tabTitle">Home</h1><p><span id="cycle">Loading this month...</span></p>
+  <p class="cyclepick"><select id="cycleSel" aria-label="Choose a salary cycle" onchange="pickCycle(this.value)"></select><span class="cyclenote" id="cycleNote"></span></p></div>
  <button id="editBtn" onclick="toggleEdit()">Edit plan</button>
 </div>
 
 <!-- HOME -->
 <div class="tab-panel on" id="tab-home">
+ <div class="pastwrap" id="pastwrap"></div>
  <div class="hero">
   <div class="eyebrow">Money received this salary cycle</div><div class="hero-number" id="salary">$0</div>
   <div class="hero-grid">
@@ -233,7 +244,8 @@ function apiPost(action,body){return fetch(API+'?code='+encodeURIComponent(CODE)
 function runner(){let ok=null,fail=null;const o={withSuccessHandler(f){ok=f;return o},withFailureHandler(f){fail=f;return o},
  apiGetState(){apiGet('state=1').then(x=>{if(x&&x.error&&/bad code/i.test(x.error))return showGate(true);ok&&ok(x)}).catch(e=>fail&&fail(e))},
  apiSaveBudget(b,w){apiPost('saveplan',{budget:b,editor:w}).then(x=>ok&&ok(x)).catch(e=>fail&&fail(e))},
- apiSaveTransactionCorrection(c,w){apiPost('savecorrection',{correction:c,editor:w}).then(x=>ok&&ok(x)).catch(e=>fail&&fail(e))}};return o}
+ apiSaveTransactionCorrection(c,w){apiPost('savecorrection',{correction:c,editor:w}).then(x=>ok&&ok(x)).catch(e=>fail&&fail(e))},
+ apiGetHistory(){apiGet('history=1').then(x=>ok&&ok(x)).catch(e=>fail&&fail(e))}};return o}
 window.google={script:{}};Object.defineProperty(window.google.script,'run',{get(){return runner()}});
 if(window.top!==window.self){try{window.top.location.replace(location.href)}catch(e){}document.addEventListener('DOMContentLoaded',()=>{const d=document.createElement('div');d.className='gate';d.innerHTML='<div class="gatebox"><div class="gbrand">ONDACHI FAMILY BUDGET</div><h2 style="font-size:20px;margin:8px 0 14px;color:var(--ink)">Open the app in full screen</h2><a target="_blank" rel="noopener" href="'+location.href+'" style="display:block;padding:14px;border-radius:14px;background:var(--rose);color:#130d17;font-weight:700;text-decoration:none;font-size:18px">Open full screen</a><div class="meta" style="margin-top:14px">Then tap Share and Add to Home Screen.</div></div>';document.body.appendChild(d)})}
 function pickWho(w){localStorage.setItem('who',w);['Collo','Hoza'].forEach(x=>{const b=document.getElementById('who'+x);if(b)b.style.borderColor=x===w?'var(--rose)':'var(--line)'})}
@@ -318,9 +330,127 @@ function salaryFallback(){
  const m=((S&&S.dash&&S.dash.money_in)||[]).find(x=>x.salary);if(m)return money(m.amount,m.currency);
  return "Not recorded yet";
 }
+/* ---- the salary cycle header and the cycle picker (18 October 2026) -------
+   Cycles are salary-anchored, so one opens on the day the salary lands and
+   closes when the next one does. dash.cycle_anchor.start is a real recorded
+   salary date. Its projected_end is NOT a prediction: the tracker sets it to
+   the fallback day of the next month, the latest the cycle could possibly
+   close, which is why it reads later than the salary is actually expected.
+   So the header shows the expected close, one month on from the start, and
+   keeps the tracker's projected_end as the smaller "at the outside" note.
+   Both are real: the four salary credits on record landed on 22 Jun, 21 Jul,
+   24 Aug and 21 Sep 2026, so one month on is the best single guess, while the
+   fallback day covers a slip (in October the 24th falls on a Saturday, which
+   is exactly how a late salary ends up on the following Monday).
+   Past cycles come from cycle-history.json, which this app only ever reads. */
+let HIST=null,VIEWCYC=null,HISTTRIED=false;
+const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONL=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function dparts(iso){const m=String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})/);return m?{y:+m[1],m:+m[2],d:+m[3]}:null}
+function dshort(iso){const p=dparts(iso);return p?p.d+" "+MONS[p.m-1]:""}
+function dshortY(iso){const p=dparts(iso);return p?p.d+" "+MONS[p.m-1]+" "+p.y:""}
+function dlong(iso){const p=dparts(iso);return p?p.d+" "+MONL[p.m-1]+" "+p.y:""}
+function dlongNoY(iso){const p=dparts(iso);return p?p.d+" "+MONL[p.m-1]:""}
+/* When the next salary is expected: the first Monday or Tuesday on or after
+   the 21st. Checked against all nine confirmed UNOPS credits of 2026, taken
+   from the Absa RTGS "date account credited" field: 26 Jan, 23 Feb, 23 Mar,
+   21 Apr, 22 May, 22 Jun, 21 Jul, 24 Aug, 21 Sep. It hits eight of the nine.
+   The single miss is May, paid Friday 22nd when this predicts Monday 25th,
+   so the error ran EARLY, which is the safe direction for planning.
+   Every one of the nine fell between the 21st and the 26th, and every one
+   landed before the last weekend of its month, which is Collo's own reading
+   of it. Six were Mondays, two Tuesdays, one Friday, and none was ever a
+   Wednesday or a Thursday. That last point is why simply adding a month is
+   wrong: it would name 21 Oct 2026, a Wednesday. On the three occasions the
+   21st was payday the 21st itself was a Monday or a Tuesday.
+   Still a projection, not a payroll schedule, and the page says so. */
+function expectedClose(iso){const p=dparts(iso);if(!p)return "";
+ let y=p.y,m=p.m+1;if(m>12){m=1;y++}
+ const d=new Date(y,m-1,21);
+ while(d.getDay()!==1&&d.getDay()!==2)d.setDate(d.getDate()+1);
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function currentRange(){
+ const a=(S&&S.dash&&S.dash.cycle_anchor)||null;if(!a||!a.start)return null;
+ return {cycle:(S&&S.dash&&S.dash.cycle)||"",start:a.start,end:expectedClose(a.start),
+         latest:a.projected_end,source:a.source,open:true};
+}
+/* Current cycle first, then the closed ones newest first. A closed cycle runs
+   from its own first recorded transaction to the next cycle's first one, so
+   the ranges join up instead of stopping at the last payment of the month. */
+function cycleList(){
+ const cur=currentRange();
+ const rows=((HIST&&HIST.cycles)||[]).filter(r=>r&&r.cycle)
+   .slice().sort((a,b)=>String(a.cycle).localeCompare(String(b.cycle)));
+ const past=rows.map((r,i)=>({cycle:r.cycle,start:r.first_txn,
+   end:(rows[i+1]&&rows[i+1].first_txn)||(cur&&cur.start)||r.last_txn,open:false,row:r}))
+   .filter(x=>!cur||x.cycle!==cur.cycle)
+   .sort((a,b)=>String(b.cycle).localeCompare(String(a.cycle)));
+ return (cur?[cur]:[]).concat(past);
+}
+function buildPicker(){
+ const sel=q("cycleSel");if(!sel)return;
+ const list=cycleList();
+ if(!list.length){sel.parentNode.style.display="none";return}
+ sel.parentNode.style.display="flex";
+ if(!VIEWCYC||!list.some(x=>x.cycle===VIEWCYC))VIEWCYC=list[0].cycle;
+ sel.innerHTML=list.map(x=>`<option value="${H(x.cycle)}"${x.cycle===VIEWCYC?" selected":""}>${
+   H(dshort(x.start)+" to "+dshortY(x.end)+(x.open?" (now)":""))}</option>`).join("");
+}
+function cycleHeader(){
+ const list=cycleList(),v=list.find(x=>x.cycle===VIEWCYC)||list[0];
+ if(!v){q("cycle").textContent=(B&&(B.window||B.cycle))||"Current salary cycle";return}
+ q("cycle").textContent=dlongNoY(v.start)+" to "+dlong(v.end);
+ if(v.open){
+  let note="Closes when the next salary lands. Expected "+dshort(v.end);
+  if(v.latest&&v.latest!==v.end)note+=", at the outside "+dshort(v.latest);
+  if(v.source==="fallback")note+=". No salary message seen, so this opened on the fallback day";
+  if(list.length<2)note+=". Earlier cycles are not loaded";
+  q("cycleNote").textContent=note+".";
+ }else{
+  const n=v.row&&v.row.transactions;
+  q("cycleNote").textContent="Closed"+(n?", "+F(n)+" transactions":"")+".";
+ }
+}
+/* buildPicker first, then cycleHeader: the header owns the note, so rebuilding
+   the options must not be the last thing that touches it. */
+function pickCycle(v){VIEWCYC=v;renderPast();buildPicker();cycleHeader()}
+function renderPast(){
+ const w=q("pastwrap");if(!w)return;
+ const v=cycleList().find(x=>x.cycle===VIEWCYC);
+ if(!v||v.open||!v.row){document.body.classList.remove("pastmode");w.className="pastwrap";w.innerHTML="";return}
+ document.body.classList.add("pastmode");w.className="pastwrap on";
+ const r=v.row,CU=["KES","RWF","USD"];
+ const block=(lab,obj,cls)=>{
+  const parts=CU.filter(c=>obj&&Number(obj[c])).map(c=>`<b class="${cls||""}" style="font-size:15px;display:block">${money(obj[c],c)}</b>`);
+  return `<div class="metric"><small>${H(lab)}</small>${parts.join("")||"<b>none</b>"}</div>`;
+ };
+ const top=[];
+ CU.forEach(c=>((r.top_spending&&r.top_spending[c])||[]).slice(0,5).forEach(t=>top.push({c:c,t:t})));
+ w.innerHTML=`<div class="panel">
+  <div class="panel-title">${H(dlongNoY(v.start))} to ${H(dlong(v.end))}</div>
+  <div class="meta">A closed cycle, shown from the saved record. Figures are what actually moved, not the plan. The tabs below still show the current cycle.</div>
+  <div class="cols" style="margin-top:10px">${block("Money in",r["in"],"good")}${block("Money out",r.out,"bad")}${block("Net",r.net)}</div>
+  <div class="row" style="margin-top:10px"><span>Transactions</span><span class="money">${F(r.transactions)}</span></div>
+  ${r.borrowed&&Number(r.borrowed.KES)?`<div class="row"><span>Borrowed</span><span class="money bad">${money(r.borrowed.KES,"KES")}</span></div>`:""}
+  ${r.debt_repaid&&Number(r.debt_repaid.KES)?`<div class="row"><span>Debt repaid</span><span class="money good">${money(r.debt_repaid.KES,"KES")}</span></div>`:""}
+  ${r.fees&&(Number(r.fees.KES)||Number(r.fees.RWF))?`<div class="row"><span>Charges paid</span><span class="money">${CU.filter(c=>r.fees[c]).map(c=>money(r.fees[c],c)).join(" · ")}</span></div>`:""}
+  ${Number(r.pocket_spent_rwf)?`<div class="row"><span>Pocket money spent</span><span class="money">${money(r.pocket_spent_rwf,"RWF")}</span></div>`:""}
+ </div>
+ ${top.length?`<div class="panel"><div class="panel-title">Where it went</div>${top.map(x=>
+   `<div class="row"><span>${H(x.t.category||"(uncategorised)")}</span><span class="money">${money(x.t.amount,x.c)}</span></div>`).join("")}</div>`:""}
+ <button class="primary big" onclick="pickCycle('${H((cycleList()[0]||{}).cycle||"")}')">Back to this cycle</button>`;
+}
+function loadHistory(){
+ try{
+  const g=window.google&&window.google.script&&window.google.script.run;
+  if(g){g.withSuccessHandler(h=>{HIST=(h&&h.cycles)?h:null;buildPicker();cycleHeader()})
+         .withFailureHandler(()=>{buildPicker();cycleHeader()}).apiGetHistory();return}
+ }catch(e){}
+ buildPicker();cycleHeader();
+}
 function renderOverview(){
  const sal=parentKpi("salary"),conv=parentKpi("convert"),r=fx(),salary=sal?sal.value:salaryFallback();
- q("salary").textContent=salary;q("cycle").textContent=B.window||B.cycle||"Current salary cycle";
+ q("salary").textContent=salary;buildPicker();cycleHeader();renderPast();
  q("overview").innerHTML=`<div class="panel"><div class="panel-title">Salary received</div><div class="row"><span>${H(sal&&sal.label||"Salary")}</span><span class="money good">${H(salary)}</span></div>
   ${sal&&sal.sub?`<div class="meta">${H(sal.sub)}</div>`:""}${conv?`<div class="row"><div><b>${H(conv.label)}</b><div class="meta">${H(conv.sub)}</div></div><span class="good">${H(conv.value)}</span></div>`:""}
   <div class="row"><span>Rates used in this plan</span><span class="money">$1 = KES ${D(r.usd_kes)}<br>KES 1 = RWF ${D(r.kes_rwf)}</span></div></div>`;
@@ -452,7 +582,9 @@ function renderHomeSummaries(){ renderHomeSentences();
  try{q("sumSms").textContent=q("smsSummary").textContent;}catch(e){}
 }
 function render(){
- if(!B)return;if(B.status_line){q("notice").style.display="block";q("notice").textContent=B.status_line}else{q("notice").style.display="none"}q("notice").textContent=B.status_line||"This cycle: the salary USD account keeps the land loan and subscriptions. The rest became shillings. Use the tabs at the bottom to move around.";
+ if(!B)return;
+ if(!HISTTRIED){HISTTRIED=true;loadHistory()}
+ if(B.status_line){q("notice").style.display="block";q("notice").textContent=B.status_line}else{q("notice").style.display="none"}q("notice").textContent=B.status_line||"This cycle: the salary USD account keeps the land loan and subscriptions. The rest became shillings. Use the tabs at the bottom to move around.";
  renderOverview();renderJourney();renderBudget();renderPocket();renderLoans();renderSpending();renderMore();
  renderHomeSummaries();
  const m=B.meta||{};q("footer").innerHTML=`${H(who())} is using this phone · <a href="#" style="color:var(--rose)" onclick="setWho(who()==='Collo'?'Hoza':'Collo');return false">not you? tap to switch</a><br>last saved by ${H(m.last_edited_by||"family")} ${H(m.last_edited_at||"")}`;
