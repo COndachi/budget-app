@@ -441,8 +441,18 @@ function cycleHeader(){
  }
 }
 /* buildPicker first, then cycleHeader: the header owns the note, so rebuilding
-   the options must not be the last thing that touches it. */
-function pickCycle(v){VIEWCYC=v;renderPast();buildPicker();cycleHeader()}
+   the options must not be the last thing that touches it.
+   The picker sits in the header and so is reachable from every tab, but what
+   it renders lives inside the Home tab. Picking another cycle from the Plan
+   tab therefore drew the whole thing somewhere invisible while the Plan tab
+   carried on showing this cycle, which read as "it does nothing" (Collo,
+   18 Oct 2026). So any cycle other than the running one takes you Home. */
+function pickCycle(v){
+ VIEWCYC=v;
+ const picked=cycleList().find(x=>x.cycle===v);
+ if(picked&&!picked.open)setTab("home",true);
+ renderPast();buildPicker();cycleHeader();
+}
 /* The next cycle is a saved plan, so it is shown as planned amounts and the
    intended money movement, never as progress. Nothing here is evidence. */
 function renderNext(v){
@@ -625,7 +635,22 @@ function renderMore(){
  const card=(B.loans&&B.loans.all||[]).find(x=>/absa visa, my own|credit card/i.test(x.name||"")),lv=card&&liveLoan(card);q("card").innerHTML=card?`<div class="row"><div><b>${H(card.name)}</b><div class="meta">${H(lv.note_live||card.note||"")}</div></div><span class="money">${money(lv.current_live!=null?lv.current_live:card.current,card.cur)}</span></div>`:'<div class="empty">Nothing flagged.</div>';
 }
 const TAB_TITLES={home:"Ondachi Budget",plan:"The plan",pocket:"Pocket money",loans:"Loans",messages:"Money messages"};
-function setTab(name){["home","plan","pocket","loans","messages"].forEach(t=>{q("tab-"+t).classList.toggle("on",t===name);q("nav-"+t).classList.toggle("on",t===name)});q("tabTitle").textContent=TAB_TITLES[name]||"Ondachi Budget";try{localStorage.setItem("budgetTab",name)}catch(e){}window.scrollTo({top:0})}
+/* Only the Home tab can show another cycle. The Plan, Pocket, Loans and
+   Messages tabs always describe the cycle that is running, so moving to one
+   of them while looking at a past or next cycle would show this month's
+   figures under last month's heading. Leaving that view returns you to the
+   current cycle. pickCycle passes keepCycle so its own hop Home does not
+   immediately undo itself. */
+function setTab(name,keepCycle){
+ if(!keepCycle&&document.body.classList.contains("pastmode")){
+  const now=(cycleList().find(x=>x.open)||{}).cycle;
+  if(now&&now!==VIEWCYC){VIEWCYC=now;renderPast();buildPicker();cycleHeader()}
+ }
+ ["home","plan","pocket","loans","messages"].forEach(t=>{q("tab-"+t).classList.toggle("on",t===name);q("nav-"+t).classList.toggle("on",t===name)});
+ q("tabTitle").textContent=TAB_TITLES[name]||"Ondachi Budget";
+ try{localStorage.setItem("budgetTab",name)}catch(e){}
+ window.scrollTo({top:0});
+}
 function wallet(cur){const b=(S&&S.dash&&S.dash.balances||[]).filter(x=>x.currency===cur);return b.length?b[0]:null}
 function cycleStart(){const c=String(S&&S.dash&&S.dash.cycle||"");const m=c.match(/^(\d{4})-(\d{2})$/);if(!m)return "";const d=new Date(Number(m[1]),Number(m[2])-2,24);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-24"}
 function fuelThisCycle(){const st=cycleStart();let t=0;Object.values(C&&C.items||{}).forEach(r=>{if(/fuel/i.test(r.category||"")&&r.currency==="RWF"&&String(r.timestamp||"")>=st)t+=Number(r.amount)||0});return t}
