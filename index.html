@@ -110,18 +110,41 @@ body.pastmode #tab-home>.hero,body.pastmode #tab-home>.notice,body.pastmode #tab
 body.pastmode #editBtn{display:none}
 .pastwrap .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 @media(max-width:380px){.pastwrap .cols{grid-template-columns:1fr}}
+/* compact header and Home alert pills (26 Oct 2026) */
+.tabtitle{align-items:center;gap:6px 8px;flex-wrap:wrap}
+.tabtitle h1{font-size:24px;white-space:nowrap}
+.hdr-right{display:flex;align-items:center;gap:6px;min-width:0;margin-left:auto}
+.tabtitle .cyclepick{margin:0;flex-wrap:nowrap;min-width:0}
+.tabtitle .cyclepick select{max-width:52vw;text-overflow:ellipsis}
+.cyclenote{display:block;margin:4px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#editBtn{display:none;min-height:0;padding:6px 11px;font-size:13px;border-radius:10px;white-space:nowrap}
+body.tab-plan #editBtn,body.edit #editBtn{display:inline-flex}
+body.pastmode #editBtn{display:none}
+.alerts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.alert{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 12px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px}
+.alert .dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.alert.warn .dot{background:var(--red)}.alert.ok .dot{background:var(--green)}
+.alert .txt{flex:1;min-width:0}
+.alert b{display:block;font-size:15px;line-height:1.3;color:var(--ink)}
+.alert .meta{margin:1px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alert .act{flex:none;min-height:0;padding:7px 14px;border:0;border-radius:999px;font-size:13px;font-weight:700;background:var(--rose-soft);color:var(--rose)}
+body.pastmode #homeAlerts{display:none}
 </style>
 </head>
 <body>
 <div class="tabtitle">
- <div><h1 id="tabTitle">Home</h1><p><span id="cycle">Loading this month...</span></p>
-  <p class="cyclepick"><select id="cycleSel" aria-label="Choose a salary cycle" onchange="pickCycle(this.value)"></select><span class="cyclenote" id="cycleNote"></span></p></div>
- <button id="editBtn" onclick="toggleEdit()">Edit plan</button>
+ <h1 id="tabTitle">Home</h1>
+ <div class="hdr-right">
+  <p class="cyclepick"><select id="cycleSel" aria-label="Choose a salary cycle" onchange="pickCycle(this.value)"></select></p>
+  <button id="editBtn" onclick="toggleEdit()">Edit</button>
+ </div>
 </div>
+<p class="cyclenote" id="cycleNote"></p><span id="cycle" hidden>Loading this month...</span>
 
 <!-- HOME -->
 <div class="tab-panel on" id="tab-home">
  <div class="pastwrap" id="pastwrap"></div>
+ <div class="alerts" id="homeAlerts"></div>
  <div class="hero">
   <div class="eyebrow">Money received this salary cycle</div><div class="hero-number" id="salary">$0</div>
   <div class="hero-grid">
@@ -131,12 +154,6 @@ body.pastmode #editBtn{display:none}
   </div>
  </div>
  <div class="notice" id="notice"></div>
- <div class="section" id="homeSentences"><div class="body" style="padding-top:14px">
-  <div class="sentence" id="sBills">Checking the house payments…</div>
-  <div class="sentence" id="sMoney"></div>
-  <div class="sentence" id="sHoza"></div>
-  <button class="primary big hide" id="needName" onclick="setTab('messages')">Payments need a name</button>
- </div></div>
  <div class="section home-list"><div class="body" style="padding-top:4px">
   <div class="row"><div><b>Home and family plan</b><div class="meta" id="sumPlan">Tick payments and enter totals used</div></div><button class="go" onclick="setTab('plan')">Open</button></div>
   <div class="row"><div><b>Collo pocket money</b><div class="meta" id="sumPocket">Every charge and what is left</div></div><button class="go" onclick="setTab('pocket')">Open</button></div>
@@ -257,7 +274,7 @@ function setWho(w){localStorage.setItem("who",w);render()}
 function fx(){return (B&&B.fx)||{usd_kes:128.5,kes_rwf:11.2}}
 function money(n,c){return c==="USD"?"$"+D(n):(c==="RWF"?"RWF ":"KES ")+F(n)}
 function markDirty(){dirty=true;q("savebar").style.display="flex"}
-function toggleEdit(){editing=!editing;document.body.classList.toggle("edit",editing);q("editBtn").textContent=editing?"Finish editing":"Edit plan";render()}
+function toggleEdit(){editing=!editing;document.body.classList.toggle("edit",editing);q("editBtn").textContent=editing?"Done":"Edit";render()}
 function budgetActual(sec,label){const a=S&&S.dash&&S.dash.budget_actuals||[];return a.find(x=>x.section===sec&&x.label===label)||{}}
 function dashItemPaid(sec,label){const a=S&&S.dash&&S.dash.family_budget&&S.dash.family_budget[sec]||[];const x=a.find(v=>v.label===label);return !!(x&&x.paid)}
 /* Lines Hoza pays are discharged when the money reaches her (Collo, 18 Oct 2026).
@@ -634,7 +651,7 @@ function renderMore(){
  q("paused").innerHTML=(B.paused||[]).map(x=>`<div class="row"><span>${H(x.label)}</span><span class="meta">${H(x.note||"")}</span></div>`).join("")||'<div class="empty">Nothing paused.</div>';
  const card=(B.loans&&B.loans.all||[]).find(x=>/absa visa, my own|credit card/i.test(x.name||"")),lv=card&&liveLoan(card);q("card").innerHTML=card?`<div class="row"><div><b>${H(card.name)}</b><div class="meta">${H(lv.note_live||card.note||"")}</div></div><span class="money">${money(lv.current_live!=null?lv.current_live:card.current,card.cur)}</span></div>`:'<div class="empty">Nothing flagged.</div>';
 }
-const TAB_TITLES={home:"Ondachi Budget",plan:"The plan",pocket:"Pocket money",loans:"Loans",messages:"Money messages"};
+const TAB_TITLES={home:"Home",plan:"Plan",pocket:"Pocket",loans:"Loans",messages:"Messages"};
 /* Only the Home tab can show another cycle. The Plan, Pocket, Loans and
    Messages tabs always describe the cycle that is running, so moving to one
    of them while looking at a past or next cycle would show this month's
@@ -646,7 +663,7 @@ function setTab(name,keepCycle){
   const now=(cycleList().find(x=>x.open)||{}).cycle;
   if(now&&now!==VIEWCYC){VIEWCYC=now;renderPast();buildPicker();cycleHeader()}
  }
- ["home","plan","pocket","loans","messages"].forEach(t=>{q("tab-"+t).classList.toggle("on",t===name);q("nav-"+t).classList.toggle("on",t===name)});
+ ["home","plan","pocket","loans","messages"].forEach(t=>{q("tab-"+t).classList.toggle("on",t===name);q("nav-"+t).classList.toggle("on",t===name);document.body.classList.toggle("tab-"+t,t===name)});
  q("tabTitle").textContent=TAB_TITLES[name]||"Ondachi Budget";
  try{localStorage.setItem("budgetTab",name)}catch(e){}
  window.scrollTo({top:0});
@@ -658,18 +675,25 @@ function whenText(a){const m=String(a||"").match(/^\d{4}-(\d{2})-(\d{2})[ T](\d{
 function isHozaRow(x){return /hoza|umuhoza|jeanne/i.test(x.who||"")}
 function unclearRows(){const rows=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out");return rows.filter(x=>!correctionFor(x)&&(isHozaRow(x)||/unknown|uncategor/i.test((x.who||"")+" "+(x.cat||""))||!x.cat))}
 function hozaChoices(){const out=[];["family","home"].forEach(sec=>(B[sec]||[]).forEach(i=>{if(i.via==="hoza"&&!i.unplanned)out.push([sec,i.label])}));return out}
+/* Home alerts, YNAB style: what needs you first, one row each, with a button
+   that jumps to the tab where it is dealt with. Titles are short; the detail
+   that used to be in the sentences sits on the one-line meta under them. */
+function alertPill(tone,title,meta,act,tab){return `<div class="alert ${tone}"><span class="dot"></span><div class="txt"><b>${title}</b>${meta?`<div class="meta">${meta}</div>`:""}</div>${act?`<button class="act" onclick="setTab('${tab}')">${act}</button>`:""}</div>`}
 function renderHomeSentences(){
  try{
+  const out=[];
+  const u=unclearRows().length;
+  if(u)out.push(alertPill("warn",`${u} payment${u===1?"":"s"} need${u===1?"s":""} a name`,"Tap the word that fits","Name","messages"));
   const home=(B.home||[]),open=home.filter(it=>!it.available&&!it.unplanned&&!usedInfo("home",it).paid);
-  const sb=q("sBills");sb.className="sentence "+(open.length?"warn":"ok");
-  sb.innerHTML=open.length?`<b>${open.length} house payment${open.length===1?" is":"s are"} still open:</b> ${H(open.map(i=>displayLabel(i.label)).join(", "))}.`:`<b>All ${home.filter(i=>!i.unplanned).length} house payments are done.</b>`;
-  const idx=(B.family||[]).findIndex(x=>/collo pocket/i.test(x.label));
-  const w=wallet("RWF"),k=wallet("KES");let sm=w?`In M-Money now: <b>RWF ${F(w.amount)}</b> (from the SMS of ${H(whenText(w.as_of))}).`:"";if(k)sm+=` M-PESA: KES ${F(k.amount)}.`;if(idx>=0){const x=usedInfo("family",B.family[idx]);sm+=` Pocket allowance in the plan: RWF ${F(B.family[idx].rwf)}, of which RWF ${F(x.spent)} is named as pocket spending so far.`}q("sMoney").innerHTML=sm;
-  const hp=S&&S.dash&&S.dash.hoza_pipeline,plan=B.hoza_planned_rwf||0;
+  out.push(open.length?alertPill("warn",`${open.length} house payment${open.length===1?"":"s"} still open`,H(open.map(i=>displayLabel(i.label)).join(", ")),"See","plan")
+   :alertPill("ok",`All ${home.filter(i=>!i.unplanned).length} house payments done`,"","",""));
   const hz=(S&&S.dash&&S.dash.recent||[]).filter(x=>x.dir==="out"&&isHozaRow(x));let own=0,house=0,toName=0;
   hz.forEach(x=>{const c=correctionFor(x),a=Number(x.amount)||0;if(!c||!c.budget_label)toName+=a;else if(c.budget_section==="family")own+=a;else house+=a});
-  q("sHoza").innerHTML=hz.length?`Sent to Hoza this cycle: <b>RWF ${F(S.dash.hoza_total_rwf||hz.reduce((n,x)=>n+(Number(x.amount)||0),0))}</b>.${own?` Her own and the children's money: RWF ${F(own)}.`:""}${house?` House items she paid: RWF ${F(house)}.`:""}${toName?` Still to name: RWF ${F(toName)}.`:""}`:"";
-  const u=unclearRows().length,btn=q("needName");btn.classList.toggle("hide",!u);btn.textContent=u?`${u} payment${u===1?"":"s"} need${u===1?"s":""} a name`:"";
+  if(hz.length)out.push(alertPill("",`RWF ${F(S.dash.hoza_total_rwf||hz.reduce((n,x)=>n+(Number(x.amount)||0),0))} sent to Hoza`,
+   [own?`Her own and the children's RWF ${F(own)}`:"",house?`House items RWF ${F(house)}`:"",toName?`RWF ${F(toName)} still to name`:""].filter(Boolean).join(" · "),"",""));
+  const w=wallet("RWF"),k=wallet("KES");
+  if(k)out.push(alertPill("",`KES ${F(k.amount)} on M-PESA`,w?`M-Money RWF ${F(w.amount)} · SMS of ${H(whenText(w.as_of))}`:"","Pocket","pocket"));
+  q("homeAlerts").innerHTML=out.join("");
  }catch(e){}
 }
 function renderHomeSummaries(){ renderHomeSentences();
