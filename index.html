@@ -129,6 +129,13 @@ body.pastmode #editBtn{display:none}
 .alert .meta{margin:1px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .alert .act{flex:none;min-height:0;padding:7px 14px;border:0;border-radius:999px;font-size:13px;font-weight:700;background:var(--rose-soft);color:var(--rose)}
 body.pastmode #homeAlerts{display:none}
+/* celebration money burst (27 Oct 2026) */
+.cash-layer{position:fixed;inset:0;pointer-events:none;z-index:250;overflow:hidden}
+.cash{position:absolute;width:38px;height:20px;border-radius:4px;background:linear-gradient(135deg,#86dcb9,#3f9e7e);border:1px solid rgba(255,255,255,.35);box-shadow:0 3px 8px rgba(0,0,0,.3)}
+.cash.gold{background:linear-gradient(135deg,#f1cf86,#c9963d)}
+.cash::before{content:"";position:absolute;inset:3px;border:1px solid rgba(255,255,255,.28);border-radius:2px}
+.cash::after{content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;border:1.5px solid rgba(255,255,255,.6)}
+.cash-chip{position:absolute;left:50%;transform:translateX(-50%);padding:8px 14px;border-radius:999px;background:rgba(19,13,23,.88);border:1px solid var(--line);color:var(--ink);font-size:14px;font-weight:700;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -702,13 +709,58 @@ function renderHomeSummaries(){ renderHomeSentences();
  try{const L=B.loans||{},d=S&&S.dash&&S.dash.debt||{};q("sumLoans").textContent=`${L.total_line||"Loading"} · paid KES ${F(d.paid_kes)} this cycle`;}catch(e){}
  try{q("sumSms").textContent=q("smsSummary").textContent;}catch(e){}
 }
+/* Celebrations: a short burst of notes when salary lands, when every payment
+   has a name, or when a loan reaches zero. Each phone remembers what it has
+   already celebrated (localStorage), and the first visit only records the
+   current state so nothing old is celebrated. ?celebrate=1 plays one burst
+   for testing. */
+function cashBurst(el,label){
+ if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+ let r=el&&el.getBoundingClientRect();
+ if(!r||!r.width||r.bottom<0||r.top>innerHeight){const h=document.querySelector(".tab-panel.on .hero")||document.querySelector(".tab-panel.on .section");r=h?h.getBoundingClientRect():{left:0,width:innerWidth,top:innerHeight*.3,bottom:innerHeight*.6}}
+ const layer=document.createElement("div");layer.className="cash-layer";document.body.appendChild(layer);
+ const top=Math.max(40,Math.min(innerHeight-60,r.top)),bot=Math.min(innerHeight-40,Math.max(top+40,r.bottom));
+ for(let i=0;i<16;i++){
+  const n=document.createElement("div");n.className="cash"+(i%4===0?" gold":"");
+  const x=r.left+Math.random()*Math.max(40,r.width-38),y=bot-20-Math.random()*Math.max(10,(bot-top)*.4);
+  n.style.left=x+"px";n.style.top=y+"px";layer.appendChild(n);
+  const rise=140+Math.random()*140,drift=(Math.random()-.5)*120,spin=(Math.random()-.5)*80;
+  n.animate([{opacity:0,transform:"translate(0,0) rotate(0deg) rotateX(0deg) scale(.6)"},
+   {opacity:1,offset:.15,transform:`translate(${drift*.2}px,${-rise*.15}px) rotate(${spin*.3}deg) rotateX(60deg) scale(1)`},
+   {opacity:1,offset:.7,transform:`translate(${drift*.8}px,${-rise*.7}px) rotate(${spin*.8}deg) rotateX(300deg) scale(1)`},
+   {opacity:0,transform:`translate(${drift}px,${-rise}px) rotate(${spin}deg) rotateX(400deg) scale(.9)`}],
+   {duration:1800+Math.random()*800,delay:Math.random()*450,easing:"cubic-bezier(.2,.7,.3,1)",fill:"both"});
+ }
+ if(label){const c=document.createElement("div");c.className="cash-chip";c.textContent=label;c.style.top=Math.max(50,top-10)+"px";layer.appendChild(c);
+  c.animate([{opacity:0,transform:"translate(-50%,8px)"},{opacity:1,offset:.15,transform:"translate(-50%,0)"},{opacity:1,offset:.8,transform:"translate(-50%,0)"},{opacity:0,transform:"translate(-50%,-6px)"}],{duration:2600,fill:"both"})}
+ setTimeout(()=>layer.remove(),3400);
+}
+let CELEB_TEST=/[?&]celebrate=1/.test(location.search);
+function celebrate(){
+ try{
+  if(!S||!S.dash||!B)return;
+  let seen=null;try{seen=JSON.parse(localStorage.getItem("budgetCelebrated")||"null")}catch(e){}
+  const cycle=String(S.dash.cycle||""),sal=parentKpi("salary"),unclear=unclearRows().length;
+  const cleared=(B.loans&&B.loans.all||[]).filter(x=>{const lv=liveLoan(x),cur=lv.current_live!=null?lv.current_live:x.current;return Number(x.original)>0&&cur!=null&&Number(cur)<=0}).map(x=>x.name);
+  const now={cycle:cycle,unclear:unclear,loans:cleared};
+  const queue=[];
+  if(seen){
+   if(cycle&&seen.cycle&&cycle!==seen.cycle&&sal)queue.push([".tab-panel.on .hero","Salary landed"]);
+   if(seen.unclear>0&&unclear===0)queue.push(["#homeAlerts","Every payment has a name"]);
+   cleared.filter(n=>!(seen.loans||[]).includes(n)).forEach(n=>queue.push(["#loans",n+" paid off"]));
+  }
+  if(CELEB_TEST){CELEB_TEST=false;queue.push([".tab-panel.on .hero","Test celebration"])}
+  try{localStorage.setItem("budgetCelebrated",JSON.stringify(now))}catch(e){}
+  queue.forEach(([sel,label],i)=>setTimeout(()=>cashBurst(document.querySelector(sel),label),400+i*1400));
+ }catch(e){}
+}
 function render(){
  if(!B)return;
  if(!HISTTRIED){HISTTRIED=true;loadHistory()}
  if(!NEXTTRIED){NEXTTRIED=true;loadNext()}
  if(B.status_line){q("notice").style.display="block";q("notice").textContent=B.status_line}else{q("notice").style.display="none"}q("notice").textContent=B.status_line||"This cycle: the salary USD account keeps the land loan and subscriptions. The rest became shillings. Use the tabs at the bottom to move around.";
  renderOverview();renderJourney();renderBudget();renderPocket();renderLoans();renderSpending();renderMore();
- renderHomeSummaries();
+ renderHomeSummaries();celebrate();
  const m=B.meta||{};q("footer").innerHTML=`${H(who())} is using this phone · <a href="#" style="color:var(--rose)" onclick="setWho(who()==='Collo'?'Hoza':'Collo');return false">not you? tap to switch</a><br>last saved by ${H(m.last_edited_by||"family")} ${H(m.last_edited_at||"")}`;
 }
 q("fxUK").addEventListener("input",()=>{if(!B)return;B.fx.usd_kes=Number(q("fxUK").value)||128.5;markDirty();renderJourney()});
