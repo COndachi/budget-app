@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#130d17">
+<meta name="theme-color" content="#080c1d">
 <title>Ondachi Family Budget</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap">
 <style>
@@ -90,7 +90,7 @@ body{padding-top:calc(env(safe-area-inset-top,0px) + 24px)} /* +24px keeps the h
 .quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.quick button{padding:9px 12px;font-size:13px;border-radius:999px;min-height:0}.quick button.more{color:var(--muted);background:transparent}
 .newitem{display:none;margin-top:8px;gap:6px}.newitem.on{display:flex;flex-wrap:wrap}.newitem input,.newitem select{flex:1;min-width:120px;padding:9px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.06);color:var(--ink)}
 .hide{display:none!important}
-.gate{position:fixed;inset:0;z-index:300;color:var(--ink);background:radial-gradient(circle at 15% -10%,rgba(153,74,136,.35),transparent 40%),linear-gradient(180deg,#1c1221,#130d17 50%);display:flex;align-items:center;justify-content:center;padding:24px}
+.gate{position:fixed;inset:0;z-index:300;color:var(--ink);background:radial-gradient(70% 45% at 0% 0%,rgba(91,61,245,.30),transparent 70%),linear-gradient(180deg,#10173a,#080c1d 55%);display:flex;align-items:center;justify-content:center;padding:24px}
 .gatebox{width:100%;max-width:340px;text-align:center}.gate .gbrand{font-size:11px;letter-spacing:.14em;font-weight:600;color:var(--muted)}
 .gate input{width:100%;padding:12px;font-size:18px;text-align:center;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.08);color:var(--ink);margin-top:14px}
 footer{text-align:center;color:var(--muted);font-size:11px;padding:18px 4px}
@@ -136,6 +136,42 @@ body.pastmode #homeAlerts{display:none}
 .cash::before{content:"";position:absolute;inset:3px;border:1px solid rgba(255,255,255,.28);border-radius:2px}
 .cash::after{content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;border:1.5px solid rgba(255,255,255,.6)}
 .cash-chip{position:absolute;left:50%;transform:translateX(-50%);padding:8px 14px;border-radius:999px;background:rgba(19,13,23,.88);border:1px solid var(--line);color:var(--ink);font-size:14px;font-weight:700;white-space:nowrap}
+/* navy glass theme (27 Oct 2026): colours and surfaces only, layout and behaviour unchanged */
+:root{
+ --paper:#080c1d;--paper2:#10173a;--card:#151d3d;--card2:#1b2550;--ink:#f5f7ff;--ink2:#d3d9f2;--muted:#8e98bf;--line:rgba(150,165,255,.15);--grid:rgba(150,165,255,.09);
+ --accent:#8b6cff;--accent-deep:#5b3df5;--soft:rgba(255,255,255,.05);--rose:#a78bfa;--rose-soft:rgba(139,108,255,.17);
+ --gold:#f5b94a;--gold-soft:rgba(245,185,74,.14);--green:#34d399;--green-soft:rgba(52,211,153,.14);
+ --orange:#f5b94a;--red:#f87171;--blue:#60a5fa;--plum:#4c3bb0;
+ --glass:linear-gradient(160deg,rgba(42,54,118,.55),rgba(16,22,50,.7));--glass-in:rgba(7,11,28,.45);
+ --glow:0 12px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.07)
+}
+body{background:radial-gradient(70% 45% at 0% 0%,rgba(91,61,245,.30),transparent 70%),radial-gradient(55% 35% at 100% 8%,rgba(56,120,255,.18),transparent 70%),linear-gradient(180deg,var(--paper2),var(--paper) 55%)}
+.primary{background:linear-gradient(120deg,var(--accent),var(--accent-deep));color:#fff;box-shadow:0 6px 18px rgba(91,61,245,.45)}
+.hero{border-radius:22px;padding:18px;border:1px solid rgba(160,170,255,.22);box-shadow:var(--glow);
+ background:radial-gradient(110% 90% at 100% 0%,rgba(139,108,255,.38),transparent 55%),radial-gradient(90% 80% at 0% 100%,rgba(52,211,153,.13),transparent 60%),var(--glass)}
+.hero-number{font-size:36px;background:linear-gradient(90deg,#fff,#c9c0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-stat{--tint:var(--green);position:relative;overflow:hidden;background:var(--glass-in);border:1px solid var(--line);border-radius:16px}
+.hero-stat:nth-child(2){--tint:var(--blue)}.hero-stat:nth-child(3){--tint:var(--accent)}
+.hero-stat::before{content:"";position:absolute;inset:0;background:radial-gradient(90% 80% at 100% 0%,var(--tint),transparent 70%);opacity:.18;pointer-events:none}
+.hero-stat small::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--tint);box-shadow:0 0 8px var(--tint)}
+.section{background:var(--glass);border:1px solid var(--line);border-radius:20px;box-shadow:var(--glow)}
+.stepno{border-radius:50%;width:34px;height:34px;font-size:14px;font-weight:700;color:#fff;border-color:rgba(139,108,255,.45);
+ background:linear-gradient(135deg,rgba(139,108,255,.45),rgba(91,61,245,.15));box-shadow:0 0 14px rgba(139,108,255,.3)}
+.panel,.metric,.sweep,.loan,.analyst{background:var(--glass-in)}
+.metric{border-radius:16px}.metric b{font-size:21px}
+.alert{background:var(--glass);box-shadow:var(--glow)}
+.bar{background:rgba(255,255,255,.08)}
+.bar i.bar-accent{background:linear-gradient(90deg,var(--accent-deep),var(--rose))}
+.bar i.bar-green{background:linear-gradient(90deg,#10b981,var(--green))}
+.move:before{box-shadow:0 0 10px var(--rose)}
+.tick.on{color:#052e1f}
+.home-list .go,.alert .act{background:linear-gradient(120deg,var(--accent),var(--accent-deep));color:#fff;box-shadow:0 4px 12px rgba(91,61,245,.35)}
+.savebar{bottom:calc(84px + env(safe-area-inset-bottom));background:var(--card2);border-color:rgba(160,170,255,.25)}
+.nav{left:0;right:0;margin:0 auto;width:calc(100% - 24px);max-width:620px;bottom:calc(10px + env(safe-area-inset-bottom));padding:7px 6px;
+ border:1px solid var(--line);border-radius:22px;background:rgba(14,20,46,.82);box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.nav button{padding:6px 10px;border-radius:14px}
+.nav button.on{color:#fff;background:linear-gradient(120deg,var(--accent),var(--accent-deep));box-shadow:0 4px 14px rgba(91,61,245,.5)}
+.cash-chip{background:rgba(10,14,32,.9)}
 </style>
 </head>
 <body>
